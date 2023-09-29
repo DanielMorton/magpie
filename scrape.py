@@ -62,6 +62,15 @@ class Scraper:
 
         return [params]
 
+    def loc_level_params(self, params, row):
+        if not row['sub_region_code'].isna():
+            params['r1'] = row['sub_region_code']
+        elif not row['region_code'].isna():
+            params['r1'] = row['region_code']
+        else:
+            params['r1'] = row['country_code']
+        return params
+
     def loc_params(self, params, row):
         pass
 
@@ -97,6 +106,7 @@ class Scraper:
         for params, (N, row) in tqdm(product(self.params_list, self.counties.iterrows()), total=total_iter):
             sleep = 1
             percent = []
+            params = self.loc_level_params(params, row)
             params = self.loc_params(params, row)
             while not percent:
                 r = session.get(self.base_url, params=params)
@@ -113,9 +123,8 @@ class Scraper:
                     sleep *= 2
                     continue
             df['percent'] = percent
-            df['state'] = row['state']
-            df['county'] = row['county']
-            df['county code'] = row['county_code']
+            df['region'] = row['region']
+            df['sub region'] = row['sub_region']
             df['start month'], df['end month'] = Scraper.months[params['bmo']], Scraper.months[params['emo']]
             if df['common name'].isna().sum() == df.shape[0]:
                 df.drop(columns=['common name'], inplace=True)
@@ -129,7 +138,6 @@ class GlobalScraper(Scraper):
         super().__init__(args, counties)
 
     def loc_params(self, params, row):
-        params['r1'] = row['county_code']
         params['r2'] = 'world'
         return params
 
@@ -140,28 +148,25 @@ class CountryScraper(Scraper):
         super().__init__(args, counties)
 
     def loc_params(self, params, row):
-        params['r1'] = row['county_code']
         params['r2'] = 'US'
         return params
 
 
-class StateScraper(Scraper):
+class RegionScraper(Scraper):
 
     def __init__(self, args, counties):
         super().__init__(args, counties)
 
     def loc_params(self, params, row):
-        params['r1'] = row['county_code']
-        params['r2'] = row['state_code']
+        params['r2'] = row['region_code']
         return params
 
 
-class CountyScraper(Scraper):
+class SubRegionScraper(Scraper):
 
     def __init__(self, args, counties):
         super().__init__(args, counties)
 
     def loc_params(self, params, row):
-        params['r1'] = row['county_code']
-        params['r2'] = row['county_code']
+        params['r2'] = row['sub_region_code']
         return params
