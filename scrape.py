@@ -1,3 +1,5 @@
+import multiprocessing
+
 import pandas as pd
 import time
 
@@ -20,6 +22,7 @@ class Scraper:
         self.output = args.output
         self.counties = counties
         self.params_list = self.parse_params(args)
+        self.num_cores = int(args.num_cores)
 
     @staticmethod
     def parse_params(args):
@@ -62,74 +65,63 @@ class Scraper:
 
         return [params]
 
-    def loc_level_params(self, params, row):
-        if not row['sub_region_code'].isna():
-            params['r1'] = row['sub_region_code']
-        elif not row['region_code'].isna():
-            params['r1'] = row['region_code']
-        else:
-            params['r1'] = row['country_code']
-        return params
-
     def loc_params(self, params, row):
         pass
 
     @staticmethod
     def parse_percent(soup):
         return [float(d['title'].split('% ')[0])
-                for d in soup.find_all('div')
-                if d.has_attr('class')
-                and d.has_attr('title')
-                and 'ResultsStats-stats' in d['class']
-                and ' frequency' in d['title']]
+                for d in soup.find_all('div', {'class': 'ResultsStats-stats'})]
 
     @staticmethod
     def parse_species(soup):
         species = [[s.text.strip() for s in d.find_all('a')[0].contents]
-                   for d in soup.find_all('div')
-                   if d.has_attr('class')
-                   and 'SpecimenHeader' in d['class']
-                   and d.find_all('a')]
+                   for d in soup.find_all('div', {'class': 'SpecimenHeader'})
+                   if d.find_all('a')]
+        if not species:
+            return pd.DataFrame({'common name': []}), True
         if len(species[0]) > 1:
             common_name = []
             scientific_name = []
             for s in species:
                 common_name.append(s[0] if len(s[0]) else None)
                 scientific_name.append(s[1])
-            return pd.DataFrame({'common name': common_name, 'scientific name': scientific_name})
+            return pd.DataFrame({'common name': common_name, 'scientific name': scientific_name}), False
         else:
-            return pd.DataFrame({'common_name': species})
+            return pd.DataFrame({'common name': species}), False
+
+    def scrape_page(self, params, row, session):
+        sleep = 1
+        percent = []
+        params = self.loc_params(params, row)
+        while not percent:
+            r = session.get(self.base_url, params=params)
+            soup = BeautifulSoup(r.content, 'html.parser')
+            has_species = len([int(s.text) for s in soup.find_all('strong') if s.has_attr('class')]) > 0
+            if not has_species:
+                time.sleep(sleep)
+                sleep *= 2
+                continue
+            df, is_empty = self.parse_species(soup)
+            if is_empty:
+                return df
+            percent = self.parse_percent(soup)[:df.shape[0]]
+        df['percent'] = percent
+        df['state'] = row['state']
+        df['county'] = row['county']
+        df['county code'] = row['county_code']
+        df['start month'], df['end month'] = Scraper.months[params['bmo']], Scraper.months[params['emo']]
+        if df['common name'].isna().sum() == df.shape[0]:
+            df.drop(columns=['common name'], inplace=True)
+        return df
 
     def scrape_data(self, session):
-        county_totals = []
-        total_iter = len(self.params_list) * self.counties.shape[0]
-        for params, (N, row) in tqdm(product(self.params_list, self.counties.iterrows()), total=total_iter):
-            sleep = 1
-            percent = []
-            params = self.loc_level_params(params, row)
-            params = self.loc_params(params, row)
-            while not percent:
-                r = session.get(self.base_url, params=params)
-                soup = BeautifulSoup(r.content, 'html.parser')
-                has_species = len([int(s.text) for s in soup.find_all('strong') if s.has_attr('class')]) > 0
-                if not has_species:
-                    time.sleep(sleep)
-                    sleep *= 2
-                    continue
-                df = self.parse_species(soup)
-                percent = self.parse_percent(soup)[:df.shape[0]]
-                if not percent:
-                    time.sleep(sleep)
-                    sleep *= 2
-                    continue
-            df['percent'] = percent
-            df['region'] = row['region']
-            df['sub region'] = row['sub_region']
-            df['start month'], df['end month'] = Scraper.months[params['bmo']], Scraper.months[params['emo']]
-            if df['common name'].isna().sum() == df.shape[0]:
-                df.drop(columns=['common name'], inplace=True)
-            county_totals.append(df)
-        return pd.concat(county_totals).reset_index(drop=True)
+       # total_iter = len(self.params_list) * self.counties.shape[0]
+        with multiprocessing.Pool(self.num_cores) as pool:
+            results = [pool.apply_async(self.scrape_page, (params, row, session)) for
+                       params, (_, row) in product(self.params_list, self.counties.iterrows())]
+            results = [r.get() for r in tqdm(results, total=len(results))]
+        return pd.concat(results).reset_index(drop=True)
 
 
 class GlobalScraper(Scraper):
@@ -138,6 +130,7 @@ class GlobalScraper(Scraper):
         super().__init__(args, counties)
 
     def loc_params(self, params, row):
+        params['r1'] = row['county_code']
         params['r2'] = 'world'
         return params
 
@@ -148,25 +141,28 @@ class CountryScraper(Scraper):
         super().__init__(args, counties)
 
     def loc_params(self, params, row):
+        params['r1'] = row['county_code']
         params['r2'] = 'US'
         return params
 
 
-class RegionScraper(Scraper):
+class StateScraper(Scraper):
 
     def __init__(self, args, counties):
         super().__init__(args, counties)
 
     def loc_params(self, params, row):
-        params['r2'] = row['region_code']
+        params['r1'] = row['county_code']
+        params['r2'] = row['state_code']
         return params
 
 
-class SubRegionScraper(Scraper):
+class CountyScraper(Scraper):
 
     def __init__(self, args, counties):
         super().__init__(args, counties)
 
     def loc_params(self, params, row):
-        params['r2'] = row['sub_region_code']
+        params['r1'] = row['county_code']
+        params['r2'] = row['county_code']
         return params

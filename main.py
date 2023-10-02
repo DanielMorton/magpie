@@ -3,7 +3,7 @@ import argparse
 import pandas as pd
 
 from login import login
-from scrape import CountryScraper, GlobalScraper, RegionScraper, SubRegionScraper
+from scrape import CountyScraper, CountryScraper, GlobalScraper, StateScraper
 
 
 # Press ⌃R to execute it or replace it with your code.
@@ -13,10 +13,11 @@ from scrape import CountryScraper, GlobalScraper, RegionScraper, SubRegionScrape
 def main():
     parser = argparse.ArgumentParser()
     region = parser.add_mutually_exclusive_group()
+    parser.add_argument("--num-cores", default=8)
     parser.add_argument("--output", required=True)
     region.add_argument("--local",
                         action="store_true")
-    region.add_argument("--region",
+    region.add_argument("--state",
                         action="store_true")
     region.add_argument("--country",
                         action="store_true")
@@ -43,9 +44,9 @@ def main():
 
     args = parser.parse_args()
     session = login()
-    counties = pd.read_csv("counties_test.csv")
-    scraper = SubRegionScraper(args, counties) if args.local else RegionScraper(args, counties) if args.region \
-        else CountryScraper(args, counties) if args.country else GlobalScraper(args, counties)
+    counties = pd.read_csv("counties.csv")
+    scraper = CountyScraper(args, counties) if args.local else StateScraper(args, counties) if args.state \
+        else CountryScraper(args, counties) if args.state else GlobalScraper(args, counties)
     data = scraper.scrape_data(session)
     data.to_csv(args.output, index=False)
 
