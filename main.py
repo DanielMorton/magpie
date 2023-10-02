@@ -13,6 +13,7 @@ from scrape import CountyScraper, CountryScraper, GlobalScraper, StateScraper
 def main():
     parser = argparse.ArgumentParser()
     region = parser.add_mutually_exclusive_group()
+    parser.add_argument("--num-cores", default=8)
     parser.add_argument("--output", required=True)
     region.add_argument("--local",
                         action="store_true")
@@ -43,7 +44,7 @@ def main():
 
     args = parser.parse_args()
     session = login()
-    counties = pd.read_csv("counties_test.csv")
+    counties = pd.read_csv("counties.csv")
     scraper = CountyScraper(args, counties) if args.local else StateScraper(args, counties) if args.state \
         else CountryScraper(args, counties) if args.state else GlobalScraper(args, counties)
     data = scraper.scrape_data(session)
