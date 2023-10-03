@@ -3,7 +3,7 @@ import argparse
 import pandas as pd
 
 from login import login
-from scrape import CountyScraper, CountryScraper, GlobalScraper, StateScraper
+from scrape import SubRegionScraper, CountryScraper, GlobalScraper, RegionScraper
 
 
 # Press ⌃R to execute it or replace it with your code.
@@ -12,17 +12,18 @@ from scrape import CountyScraper, CountryScraper, GlobalScraper, StateScraper
 
 def main():
     parser = argparse.ArgumentParser()
-    region = parser.add_mutually_exclusive_group()
     parser.add_argument("--num-cores", default=8)
     parser.add_argument("--output", required=True)
-    region.add_argument("--local",
-                        action="store_true")
-    region.add_argument("--state",
-                        action="store_true")
-    region.add_argument("--country",
-                        action="store_true")
-    region.add_argument("--world",
-                        action="store_true")
+
+    list_type = parser.add_mutually_exclusive_group()
+    list_type.add_argument("--local",
+                           action="store_true")
+    list_type.add_argument("--state",
+                           action="store_true")
+    list_type.add_argument("--country",
+                           action="store_true")
+    list_type.add_argument("--world",
+                           action="store_true")
 
     list_type = parser.add_mutually_exclusive_group()
     list_type.add_argument("--life",
@@ -44,9 +45,9 @@ def main():
 
     args = parser.parse_args()
     session = login()
-    counties = pd.read_csv("counties.csv")
-    scraper = CountyScraper(args, counties) if args.local else StateScraper(args, counties) if args.state \
-        else CountryScraper(args, counties) if args.state else GlobalScraper(args, counties)
+    regions = pd.read_csv("regions.csv")
+    scraper = SubRegionScraper(args, regions) if args.local else RegionScraper(args, regions) if args.state \
+        else CountryScraper(args, regions) if args.state else GlobalScraper(args, regions)
     data = scraper.scrape_data(session)
     data.to_csv(args.output, index=False)
 

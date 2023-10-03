@@ -75,9 +75,12 @@ class Scraper:
 
     @staticmethod
     def parse_species(soup):
-        species = [[s.text.strip() for s in d.find_all('a')[0].contents]
-                   for d in soup.find_all('div', {'class': 'SpecimenHeader'})
-                   if d.find_all('a')]
+        native = soup.find('section', {'aria-labelledby': 'native-and-naturalized'})
+        if not native:
+            return pd.DataFrame({'common name': []}), True
+        species = [[s.text.strip() for s in d.find('a').contents]
+                   for d in native.find_all('div', {'class': 'SpecimenHeader'})
+                   if d.find('a')]
         if not species:
             return pd.DataFrame({'common name': []}), True
         if len(species[0]) > 1:
@@ -107,16 +110,16 @@ class Scraper:
                 return df
             percent = self.parse_percent(soup)[:df.shape[0]]
         df['percent'] = percent
-        df['state'] = row['state']
-        df['county'] = row['county']
-        df['county code'] = row['county_code']
+        df['country'] = row['country']
+        df['region'] = row['region']
+        df['sub region'] = row['sub_region']
+        df['code'] = row['sub_region_code']
         df['start month'], df['end month'] = Scraper.months[params['bmo']], Scraper.months[params['emo']]
         if df['common name'].isna().sum() == df.shape[0]:
             df.drop(columns=['common name'], inplace=True)
         return df
 
     def scrape_data(self, session):
-       # total_iter = len(self.params_list) * self.counties.shape[0]
         with multiprocessing.Pool(self.num_cores) as pool:
             results = [pool.apply_async(self.scrape_page, (params, row, session)) for
                        params, (_, row) in product(self.params_list, self.counties.iterrows())]
@@ -130,7 +133,7 @@ class GlobalScraper(Scraper):
         super().__init__(args, counties)
 
     def loc_params(self, params, row):
-        params['r1'] = row['county_code']
+        params['r1'] = row['sub_region_code']
         params['r2'] = 'world'
         return params
 
@@ -141,28 +144,28 @@ class CountryScraper(Scraper):
         super().__init__(args, counties)
 
     def loc_params(self, params, row):
-        params['r1'] = row['county_code']
-        params['r2'] = 'US'
+        params['r1'] = row['sub_region_code']
+        params['r2'] = row['country_code']
         return params
 
 
-class StateScraper(Scraper):
+class RegionScraper(Scraper):
 
     def __init__(self, args, counties):
         super().__init__(args, counties)
 
     def loc_params(self, params, row):
-        params['r1'] = row['county_code']
-        params['r2'] = row['state_code']
+        params['r1'] = row['sub_region_code']
+        params['r2'] = row['region_code']
         return params
 
 
-class CountyScraper(Scraper):
+class SubRegionScraper(Scraper):
 
     def __init__(self, args, counties):
         super().__init__(args, counties)
 
     def loc_params(self, params, row):
-        params['r1'] = row['county_code']
-        params['r2'] = row['county_code']
+        params['r1'] = row['sub_region_code']
+        params['r2'] = row['sub_region_code']
         return params
