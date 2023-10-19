@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 
 class Scraper:
+    broken_link = 'The operation you requested cannot currently be performed. We apologize for the inconvenience and will try to address this as soon as possible. Please check back soon and hopefully this will be fixed. If this is still not fixed, visit the "Help" tab to send us an email describing the problem.'
     base_url = "https://ebird.org/targets"
     months = {1: 'January', 2: 'February',
               3: 'March', 4: 'April',
@@ -18,9 +19,10 @@ class Scraper:
               9: 'September', 10: 'October',
               11: 'November', 12: 'December'}
 
-    def __init__(self, args, counties):
+    def __init__(self, args, regions):
+        self.hotspot = args.hotspot
         self.output = args.output
-        self.counties = counties
+        self.regions = regions
         self.params_list = self.parse_params(args)
         self.num_cores = int(args.num_cores)
 
@@ -100,6 +102,8 @@ class Scraper:
         while not percent:
             r = session.get(self.base_url, params=params)
             soup = BeautifulSoup(r.content, 'html.parser')
+            if soup.find('p').text == Scraper.broken_link:
+                return pd.DataFrame({'common name': []})
             has_species = len([int(s.text) for s in soup.find_all('strong') if s.has_attr('class')]) > 0
             if not has_species:
                 time.sleep(sleep)
@@ -109,11 +113,16 @@ class Scraper:
             if is_empty:
                 return df
             percent = self.parse_percent(soup)[:df.shape[0]]
+        num_checklists = int(''.join(s for s in soup.find('p').text if s.isdigit()))
+        df['checklists'] = num_checklists
         df['percent'] = percent
         df['country'] = row['country']
         df['region'] = row['region']
         df['sub region'] = row['sub_region']
         df['code'] = row['sub_region_code']
+        if self.hotspot:
+            df['hotspot'] = row['hotspot']
+            df['hotspot_code'] = row['hotspot_code']
         df['start month'], df['end month'] = Scraper.months[params['bmo']], Scraper.months[params['emo']]
         if df['common name'].isna().sum() == df.shape[0]:
             df.drop(columns=['common name'], inplace=True)
@@ -122,7 +131,7 @@ class Scraper:
     def scrape_data(self, session):
         with multiprocessing.Pool(self.num_cores) as pool:
             results = [pool.apply_async(self.scrape_page, (params, row, session)) for
-                       params, (_, row) in product(self.params_list, self.counties.iterrows())]
+                       params, (_, row) in product(self.params_list, self.regions.iterrows())]
             results = [r.get() for r in tqdm(results, total=len(results))]
         return pd.concat(results).reset_index(drop=True)
 
@@ -133,7 +142,7 @@ class GlobalScraper(Scraper):
         super().__init__(args, counties)
 
     def loc_params(self, params, row):
-        params['r1'] = row['sub_region_code']
+        params['r1'] = row['hotspot_code'] if self.hotspot else row['sub_region_code']
         params['r2'] = 'world'
         return params
 
@@ -144,7 +153,7 @@ class CountryScraper(Scraper):
         super().__init__(args, counties)
 
     def loc_params(self, params, row):
-        params['r1'] = row['sub_region_code']
+        params['r1'] = row['hotspot_code'] if self.hotspot else row['sub_region_code']
         params['r2'] = row['country_code']
         return params
 
@@ -155,7 +164,7 @@ class RegionScraper(Scraper):
         super().__init__(args, counties)
 
     def loc_params(self, params, row):
-        params['r1'] = row['sub_region_code']
+        params['r1'] = row['hotspot_code'] if self.hotspot else row['sub_region_code']
         params['r2'] = row['region_code']
         return params
 
@@ -166,6 +175,6 @@ class SubRegionScraper(Scraper):
         super().__init__(args, counties)
 
     def loc_params(self, params, row):
-        params['r1'] = row['sub_region_code']
+        params['r1'] = row['hotspot_code'] if self.hotspot else row['sub_region_code']
         params['r2'] = row['sub_region_code']
         return params
