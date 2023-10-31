@@ -11,6 +11,7 @@ use scraper::{ElementRef, Html};
 use std::str::FromStr;
 use std::thread;
 use std::time::{Duration, Instant};
+use rayon::prelude::*;
 use crate::login::LOGIN_URL;
 
 static BASE_URL: &str = "https://ebird.org/targets";
@@ -208,19 +209,21 @@ impl Scraper {
         let loc_query = self.make_loc_payload();
         let loc_vec = self.make_loc_vec();
         let loc_payload = loc_vec
-            .iter()
-            .zip(loc_query.iter())
-            .collect::<Vec<(&LocationRow, &Vec<(String, String)>)>>();
+            .into_iter()
+            .zip(loc_query.into_iter())
+            .collect::<Vec<(LocationRow, Vec<(String, String)>)>>();
         let time_query = self.make_time_payload();
-        let payloads = loc_payload.iter().cartesian_product(&time_query);
+        let payloads = &loc_payload
+            .cartesian_product(&time_query);
         let s = Instant::now();
-        let output_list = payloads
+        let output_list = payloads.par_iter()
             .map(|((row, loc), time)| {
-                let mut df = self.scrape_page(loc, time, &date_query, 1);
-                self.add_columns(&mut df, row, time);
+                let mut df = self.scrape_page(&loc, &time, &date_query, 1);
+                self.add_columns(&mut df, &row, &time);
                 df
             })
             .collect::<Vec<_>>();
+
         print_hms(&s);
         output_list
             .into_iter()

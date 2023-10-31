@@ -1,11 +1,10 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LocationRow {
     country:String,
     region: String,
     sub_region: String,
     hotspot: Option<String>,
 }
-
 impl LocationRow {
     pub(crate) fn new(loc_vec: Vec<String>) -> Self {
         if loc_vec.len() == 3 {
