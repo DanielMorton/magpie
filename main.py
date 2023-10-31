@@ -14,7 +14,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--num-cores", default=8)
     parser.add_argument("--output", required=True)
-    parser.add_argument("--hotspot", default=None)
+
+    csv_type = parser.add_mutually_exclusive_group()
+    csv_type.add_argument("--hotspot", default=None)
+    csv_type.add_argument("--geo", default=None)
 
     list_type = parser.add_mutually_exclusive_group()
     list_type.add_argument("--local",
@@ -50,13 +53,14 @@ def main():
     if args.hotspot and (args.region or args.country):
         raise Exception("Hotspot must use local or world list type.")
 
-    regions = pd.read_csv(args.hotspot) if args.hotspot else pd.read_csv("regions.csv")
+    regions = pd.read_csv(args.hotspot) if args.hotspot \
+        else pd.read_csv(args.geo) if args.geo \
+        else pd.read_csv("regions.csv")
     scraper = SubRegionScraper(args, regions) if args.local \
         else GlobalScraper(args, regions) if args.hotspot \
         else RegionScraper(args, regions) if args.region \
         else CountryScraper(args, regions) if args.country \
         else GlobalScraper(args, regions)
-    print("Start Scraping")
     data = scraper.scrape_data(session)
     data.to_csv(args.output, index=False)
 

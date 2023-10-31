@@ -21,7 +21,6 @@ class Scraper:
 
     def __init__(self, args, regions):
         self.hotspot = args.hotspot
-        self.output = args.output
         self.regions = regions
         self.params_list = self.parse_params(args)
         self.num_cores = int(args.num_cores)
@@ -72,8 +71,11 @@ class Scraper:
 
     @staticmethod
     def parse_percent(soup):
-        return [float(d['title'].split('% ')[0])
-                for d in soup.find_all('div', {'class': 'ResultsStats-stats'})]
+        try:
+            return [float(d['title'].split('% ')[0])
+                    for d in soup.find_all('div', {'class': 'ResultsStats-stats'})]
+        except Exception as e:
+            return []
 
     @staticmethod
     def parse_species(soup):
@@ -99,6 +101,7 @@ class Scraper:
         sleep = 1
         percent = []
         params = self.loc_params(params, row)
+
         while not percent:
             r = session.get(self.base_url, params=params)
             soup = BeautifulSoup(r.content, 'html.parser')
@@ -138,8 +141,8 @@ class Scraper:
 
 class GlobalScraper(Scraper):
 
-    def __init__(self, args, counties):
-        super().__init__(args, counties)
+    def __init__(self, args, regions):
+        super().__init__(args, regions)
 
     def loc_params(self, params, row):
         params['r1'] = row['hotspot_code'] if self.hotspot else row['sub_region_code']
@@ -149,8 +152,8 @@ class GlobalScraper(Scraper):
 
 class CountryScraper(Scraper):
 
-    def __init__(self, args, counties):
-        super().__init__(args, counties)
+    def __init__(self, args, regions):
+        super().__init__(args, regions)
 
     def loc_params(self, params, row):
         params['r1'] = row['hotspot_code'] if self.hotspot else row['sub_region_code']
@@ -160,8 +163,8 @@ class CountryScraper(Scraper):
 
 class RegionScraper(Scraper):
 
-    def __init__(self, args, counties):
-        super().__init__(args, counties)
+    def __init__(self, args, regions):
+        super().__init__(args, regions)
 
     def loc_params(self, params, row):
         params['r1'] = row['hotspot_code'] if self.hotspot else row['sub_region_code']
@@ -171,8 +174,8 @@ class RegionScraper(Scraper):
 
 class SubRegionScraper(Scraper):
 
-    def __init__(self, args, counties):
-        super().__init__(args, counties)
+    def __init__(self, args, regions):
+        super().__init__(args, regions)
 
     def loc_params(self, params, row):
         params['r1'] = row['hotspot_code'] if self.hotspot else row['sub_region_code']

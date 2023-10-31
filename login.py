@@ -2,7 +2,7 @@ import getpass
 import requests
 from lxml import html
 
-LOGIN_URL = 'https://secure.birds.cornell.edu/cassso/login?service=https%3A%2F%2Febird.org%2Flogin%2Fcas%3Fportal%3Debird&locale=en_US'
+LOGIN_URL = 'https://secure.birds.cornell.edu/cassso/login'
 
 
 def login():
@@ -22,7 +22,6 @@ def login():
                       _eventId="submit"
                       )
 
-    session.post(LOGIN_URL, data=login_data,
-                 headers=dict(referer=LOGIN_URL))
+    session.post(LOGIN_URL, data=login_data)
     del password, login_data
     return session
