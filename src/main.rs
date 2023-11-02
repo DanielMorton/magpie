@@ -16,6 +16,7 @@ use polars::prelude::{CsvWriter, LazyCsvReader, LazyFileListReader};
 use scraper::Scraper;
 use std::fs::File;
 use std::time::Instant;
+use crate::scraper::scrape_pages;
 
 fn load_data(loc_file: &str) -> DataFrame {
     match LazyCsvReader::new(loc_file)
@@ -53,7 +54,7 @@ fn main() {
     let scraper = Scraper::new(
         client, date_range, list_level, list_type, loc_df, time_range,
     );
-    let mut output = scraper.scrape_pages();
+    let mut output = scrape_pages(scraper);
     let file = match File::create(output_file) {
         Ok(f) => f,
         Err(e) => panic!("{}", e),

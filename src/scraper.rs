@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use crate::print_hms;
 use crate::row::{LocationRow, SpeciesRow};
 use crate::scrape_params::{DateRange, ListLevel, ListType};
@@ -9,9 +10,9 @@ use polars::series::Series;
 use reqwest::blocking::{Client, Response};
 use scraper::{ElementRef, Html};
 use std::str::FromStr;
+use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
-use rayon::prelude::*;
 use crate::login::LOGIN_URL;
 
 static BASE_URL: &str = "https://ebird.org/targets";
@@ -46,7 +47,7 @@ impl Scraper {
         }
     }
 
-    fn add_columns(&self, df: &mut DataFrame, row: &LocationRow, time: &Vec<(String, u8)>) {
+    fn add_columns(&self, df: &mut DataFrame, row: LocationRow, time: &Vec<(String, u8)>) {
         let size = df.shape().0;
         df.with_column(Series::new("sub_region", vec![row.sub_region(); size]))
             .unwrap();
@@ -144,7 +145,7 @@ impl Scraper {
         &self,
         loc: &Vec<(String, String)>,
         time: &Vec<(String, u8)>,
-        date_query: &Vec<(&str, String)>,
+        date_query: &Arc<Vec<(&str, String)>>,
         sleep: u64,
     ) -> Response {
         match self
@@ -152,7 +153,7 @@ impl Scraper {
             .get(BASE_URL)
             .query(loc)
             .query(time)
-            .query(date_query)
+            .query(date_query.deref())
             .send() {
             Ok(r) => {
                 if r.url().to_string().contains(LOGIN_URL) {
@@ -171,15 +172,19 @@ impl Scraper {
 
     fn scrape_page(
         &self,
-        loc: &Vec<(String, String)>,
-        time: &Vec<(String, u8)>,
-        date_query: &Vec<(&str, String)>,
+        loc: Vec<(String, String)>,
+        time: &Arc<Vec<(String, u8)>>,
+        date_query: Arc<Vec<(&str, String)>>,
         sleep: u64,
     ) -> DataFrame {
-        let response = self.get_response(loc, time, date_query, sleep);
+        let response = self.get_response(&loc, &time, &date_query, sleep);
+        thread::sleep(Duration::from_secs(sleep));
         let doc = match response.text() {
             Ok(text) => Html::parse_document(&text),
-            Err(e) => panic!("{}", e),
+            Err(e) => {
+                println!("{}", e);
+                return self.scrape_page(loc, time, date_query, 2 * sleep)
+            },
         };
         match doc
             .select(&self.selectors.species_count())
@@ -202,33 +207,6 @@ impl Scraper {
                 self.scrape_page(loc, time, date_query, 2 * sleep)
             }
         }
-    }
-
-    pub(crate) fn scrape_pages(&self) -> DataFrame {
-        let date_query = vec![("t2", self.date_range.to_string())];
-        let loc_query = self.make_loc_payload();
-        let loc_vec = self.make_loc_vec();
-        let loc_payload = loc_vec
-            .into_iter()
-            .zip(loc_query.into_iter())
-            .collect::<Vec<(LocationRow, Vec<(String, String)>)>>();
-        let time_query = self.make_time_payload();
-        let payloads = &loc_payload
-            .cartesian_product(&time_query);
-        let s = Instant::now();
-        let output_list = payloads.par_iter()
-            .map(|((row, loc), time)| {
-                let mut df = self.scrape_page(&loc, &time, &date_query, 1);
-                self.add_columns(&mut df, &row, &time);
-                df
-            })
-            .collect::<Vec<_>>();
-
-        print_hms(&s);
-        output_list
-            .into_iter()
-            .reduce(|a, b| a.vstack(&b).unwrap())
-            .unwrap()
     }
 
     fn scrape_table(&self, table: ElementRef) -> DataFrame {
@@ -288,4 +266,42 @@ impl Scraper {
         );
         return DataFrame::new(vec![common_name, scietific_name, percent]).unwrap();
     }
+}
+
+pub(crate) fn scrape_pages(scraper: Scraper) -> DataFrame {
+    let date_query = Arc::new(vec![("t2", scraper.date_range.to_string())]);
+    let loc_query = scraper.make_loc_payload();
+    let loc_vec = scraper.make_loc_vec();
+    let time_query = scraper.make_time_payload();
+    let arc_scraper = Arc::new(scraper);
+    let loc_payload = loc_vec
+        .into_iter()
+        .zip(loc_query.into_iter())
+        .collect::<Vec<(LocationRow, Vec<(String, String)>)>>();
+    let payloads = loc_payload.into_iter()
+        .cartesian_product(time_query);
+    let s = Instant::now();
+    let mut threads = Vec::new();
+    payloads.for_each(|((row, loc), time)| {
+
+            let time_clone = Arc::new(time);
+            let scraper_clone = arc_scraper.clone();
+            let date_clone = date_query.clone();
+            threads.push(
+            thread::spawn(move ||{
+                let time = time_clone;
+
+                let mut df = scraper_clone.scrape_page(loc.clone(), &time, date_clone, 1);
+                scraper_clone.add_columns(&mut df, row.clone(), &time);
+                df
+            }))
+        });
+    let output_list = threads.into_iter()
+        .map(|t| t.join().unwrap()).collect::<Vec<_>>();
+
+    print_hms(&s);
+    output_list
+        .into_iter()
+        .reduce(|a, b| a.vstack(&b).unwrap())
+        .unwrap()
 }
