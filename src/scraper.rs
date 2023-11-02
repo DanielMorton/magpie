@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use crate::login::LOGIN_URL;
 use crate::print_hms;
 use crate::row::{LocationRow, SpeciesRow};
 use crate::scrape_params::{DateRange, ListLevel, ListType};
@@ -9,11 +9,11 @@ use polars::prelude::NamedFrom;
 use polars::series::Series;
 use reqwest::blocking::{Client, Response};
 use scraper::{ElementRef, Html};
+use std::ops::Deref;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
-use crate::login::LOGIN_URL;
 
 static BASE_URL: &str = "https://ebird.org/targets";
 
@@ -154,7 +154,8 @@ impl Scraper {
             .query(loc)
             .query(time)
             .query(date_query.deref())
-            .send() {
+            .send()
+        {
             Ok(r) => {
                 if r.url().to_string().contains(LOGIN_URL) {
                     thread::sleep(Duration::from_secs(sleep));
@@ -183,8 +184,8 @@ impl Scraper {
             Ok(text) => Html::parse_document(&text),
             Err(e) => {
                 println!("{}", e);
-                return self.scrape_page(loc, time, date_query, 2 * sleep)
-            },
+                return self.scrape_page(loc, time, date_query, 2 * sleep);
+            }
         };
         match doc
             .select(&self.selectors.species_count())
@@ -245,11 +246,7 @@ impl Scraper {
                         Err(e) => panic!("{}", e),
                     })
                     .unwrap_or(0.0);
-                SpeciesRow::new(
-                    common_name,
-                    scientific_name,
-                    percent,
-                )
+                SpeciesRow::new(common_name, scientific_name, percent)
             })
             .collect::<Vec<_>>();
         let common_name = Series::new(
@@ -258,7 +255,10 @@ impl Scraper {
         );
         let scietific_name = Series::new(
             "scientific name",
-            df_row.iter().map(|r| r.scientific_name()).collect::<Vec<_>>(),
+            df_row
+                .iter()
+                .map(|r| r.scientific_name())
+                .collect::<Vec<_>>(),
         );
         let percent = Series::new(
             "percent",
@@ -278,26 +278,25 @@ pub(crate) fn scrape_pages(scraper: Scraper) -> DataFrame {
         .into_iter()
         .zip(loc_query.into_iter())
         .collect::<Vec<(LocationRow, Vec<(String, String)>)>>();
-    let payloads = loc_payload.into_iter()
-        .cartesian_product(time_query);
+    let payloads = loc_payload.into_iter().cartesian_product(time_query);
     let s = Instant::now();
     let mut threads = Vec::new();
     payloads.for_each(|((row, loc), time)| {
+        let time_clone = Arc::new(time);
+        let scraper_clone = arc_scraper.clone();
+        let date_clone = date_query.clone();
+        threads.push(thread::spawn(move || {
+            let time = time_clone;
 
-            let time_clone = Arc::new(time);
-            let scraper_clone = arc_scraper.clone();
-            let date_clone = date_query.clone();
-            threads.push(
-            thread::spawn(move ||{
-                let time = time_clone;
-
-                let mut df = scraper_clone.scrape_page(loc.clone(), &time, date_clone, 1);
-                scraper_clone.add_columns(&mut df, row.clone(), &time);
-                df
-            }))
-        });
-    let output_list = threads.into_iter()
-        .map(|t| t.join().unwrap()).collect::<Vec<_>>();
+            let mut df = scraper_clone.scrape_page(loc.clone(), &time, date_clone, 1);
+            scraper_clone.add_columns(&mut df, row.clone(), &time);
+            df
+        }))
+    });
+    let output_list = threads
+        .into_iter()
+        .map(|t| t.join().unwrap())
+        .collect::<Vec<_>>();
 
     print_hms(&s);
     output_list

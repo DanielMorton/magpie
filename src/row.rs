@@ -1,6 +1,6 @@
 #[derive(Debug, Clone)]
 pub struct LocationRow {
-    country:String,
+    country: String,
     region: String,
     sub_region: String,
     hotspot: Option<String>,
@@ -8,10 +8,7 @@ pub struct LocationRow {
 impl LocationRow {
     pub(crate) fn new(loc_vec: Vec<String>) -> Self {
         if loc_vec.len() == 3 {
-            LocationRow::new_location(
-                loc_vec[0].clone(),
-                loc_vec[1].clone(),
-                loc_vec[2].clone())
+            LocationRow::new_location(loc_vec[0].clone(), loc_vec[1].clone(), loc_vec[2].clone())
         } else {
             LocationRow::new_hotspot(
                 loc_vec[0].clone(),
@@ -36,11 +33,7 @@ impl LocationRow {
         }
     }
 
-    pub(crate) fn new_location(
-        country: String,
-        region: String,
-        sub_region: String
-    ) -> Self {
+    pub(crate) fn new_location(country: String, region: String, sub_region: String) -> Self {
         LocationRow {
             country,
             region,

@@ -9,6 +9,7 @@ extern crate strum;
 #[macro_use]
 extern crate strum_macros;
 
+use crate::scraper::scrape_pages;
 use parse::MagpieParse;
 use polars::frame::DataFrame;
 use polars::io::prelude::*;
@@ -16,7 +17,6 @@ use polars::prelude::{CsvWriter, LazyCsvReader, LazyFileListReader};
 use scraper::Scraper;
 use std::fs::File;
 use std::time::Instant;
-use crate::scraper::scrape_pages;
 
 fn load_data(loc_file: &str) -> DataFrame {
     match LazyCsvReader::new(loc_file)
