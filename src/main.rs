@@ -9,12 +9,11 @@ extern crate strum;
 #[macro_use]
 extern crate strum_macros;
 
-use crate::scraper::scrape_pages;
 use parse::MagpieParse;
 use polars::frame::DataFrame;
 use polars::io::prelude::*;
 use polars::prelude::{CsvWriter, LazyCsvReader, LazyFileListReader};
-use scraper::Scraper;
+use scraper::{scrape_pages,Scraper};
 use std::fs::File;
 use std::time::Instant;
 

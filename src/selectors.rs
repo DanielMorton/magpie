@@ -1,8 +1,10 @@
 use scraper::Selector;
 
 static A: &str = "a";
+static HOTSPOT_SELECT: &str = r#"a[href^="hotspot"]"#;
 static NATIVE: &str = r#"section[aria-labelledby="native-and-naturalized"]"#;
 static PERCENT: &str = r#"div[class="ResultsStats-stats"]"#;
+static REGION_SELECT: &str = r#"a[href^="region"]"#;
 static ROW: &str = r#"li[class="ResultsStats ResultsStats--action ResultsStats--toEdge"]"#;
 static SCI_NAME: &str = r#"em[class="sci"]"#;
 static SPECIES: &str = r#"div[class="SpecimenHeader"]"#;
@@ -10,8 +12,10 @@ static SPECIES_COUNT: &str = r#"strong[class="Heading Heading--h1"]"#;
 
 pub(crate) struct Selectors {
     a: Selector,
+    hotspot_select: Selector,
     native: Selector,
     percent: Selector,
+    region_select: Selector,
     rows: Selector,
     sci_name: Selector,
     species: Selector,
@@ -24,11 +28,19 @@ impl Selectors {
             Ok(seletor) => seletor,
             Err(e) => panic!("{}", e),
         };
+        let hotspot_select = match Selector::parse(HOTSPOT_SELECT) {
+            Ok(seletor) => seletor,
+            Err(e) => panic!("{}", e),
+        };
         let native = match Selector::parse(NATIVE) {
             Ok(seletor) => seletor,
             Err(e) => panic!("{}", e),
         };
         let percent = match Selector::parse(PERCENT) {
+            Ok(seletor) => seletor,
+            Err(e) => panic!("{}", e),
+        };
+        let region_select = match Selector::parse(REGION_SELECT) {
             Ok(seletor) => seletor,
             Err(e) => panic!("{}", e),
         };
@@ -50,8 +62,10 @@ impl Selectors {
         };
         Selectors {
             a,
+            hotspot_select,
             native,
             percent,
+            region_select,
             rows,
             sci_name,
             species,
@@ -62,11 +76,17 @@ impl Selectors {
     pub(crate) fn a(&self) -> &Selector {
         &self.a
     }
+    pub(crate) fn hotspot_select(&self) -> &Selector {
+        &self.hotspot_select
+    }
     pub(crate) fn native(&self) -> &Selector {
         &self.native
     }
     pub(crate) fn percent(&self) -> &Selector {
         &self.percent
+    }
+    pub(crate) fn region_select(&self) -> &Selector {
+        &self.region_select
     }
     pub(crate) fn rows(&self) -> &Selector {
         &self.rows

@@ -37,7 +37,6 @@ pub(crate) fn parse() -> ArgMatches {
         .arg(arg!(--geo[GEO]))
         .group(ArgGroup::new("csv_range").args(["hotspot", "region"]))
         .arg(arg!(--output <OUTPUT>))
-        .arg(arg!(--num_cores[NUM_CORES]))
         .get_matches()
 }
 
@@ -47,8 +46,6 @@ pub(crate) trait MagpieParse {
     fn get_list_type(&self) -> ListType;
 
     fn get_loc_data(&self) -> (&str, ListLevel);
-
-    fn get_num_cores(&self) -> u8;
 
     fn get_output_file(&self) -> &str;
 
@@ -91,20 +88,6 @@ impl MagpieParse for ArgMatches {
                 Some(f) => (f, SubRegion),
                 None => (DEFAULT_LOCATION, SubRegion),
             },
-        }
-    }
-
-    fn get_num_cores(&self) -> u8 {
-        match self.get_one::<u8>("num_cores") {
-            Some(&c) => c,
-            None => {
-                let cores = num_cpus::get() as u8;
-                if cores > 1 {
-                    cores / 2
-                } else {
-                    cores
-                }
-            }
         }
     }
 
