@@ -4,6 +4,7 @@ mod row;
 mod scrape_params;
 mod scraper;
 mod selectors;
+mod table;
 
 extern crate strum;
 #[macro_use]
@@ -13,7 +14,7 @@ use parse::MagpieParse;
 use polars::frame::DataFrame;
 use polars::io::prelude::*;
 use polars::prelude::{CsvWriter, LazyCsvReader, LazyFileListReader};
-use scraper::{scrape_pages,Scraper};
+use scraper::{scrape_pages, Scraper};
 use std::fs::File;
 use std::time::Instant;
 
