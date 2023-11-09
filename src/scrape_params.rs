@@ -1,5 +1,7 @@
 #[derive(Display, Debug, PartialEq)]
 pub(crate) enum ListType {
+    #[strum(serialize = "hotspot")]
+    Hotspot,
     #[strum(serialize = "sub_region")]
     Local,
     #[strum(serialize = "region")]

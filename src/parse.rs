@@ -68,16 +68,33 @@ impl MagpieParse for ArgMatches {
     }
 
     fn get_list_type(&self) -> ListType {
-        if self.get_flag("local") {
-            ListType::Local
-        } else if self.get_flag("region") {
-            ListType::Region
-        } else if self.get_flag("country") {
-            ListType::Country
-        } else if self.get_flag("global") {
-            ListType::Global
-        } else {
-            panic!("Invalid List Type.")
+        match self.get_one::<String>("hotspot") {
+            Some(_) => {
+                if self.get_flag("local") {
+                    return ListType::Hotspot;
+                } else if self.get_flag("global") {
+                    return ListType::Global;
+                } else {
+                    panic!("Invalid List Type for hotspot list.")
+                }
+            }
+            None => (),
+        };
+        match self.get_one::<String>("geo") {
+            Some(_) => {
+                if self.get_flag("local") {
+                    ListType::Local
+                } else if self.get_flag("region") {
+                    ListType::Region
+                } else if self.get_flag("country") {
+                    ListType::Country
+                } else if self.get_flag("global") {
+                    ListType::Global
+                } else {
+                    panic!("Invalid List Type for geo list.")
+                }
+            }
+            None => panic!("Invalid List Type."),
         }
     }
 

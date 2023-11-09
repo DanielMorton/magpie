@@ -161,7 +161,7 @@ impl Scraper {
     ) -> DataFrame {
         let loc_code = &loc[0].1;
         let response = self.get_response(&loc, &time, date_query, sleep);
-        //let url = response.url().to_string();
+        let url = response.url().to_string();
         let doc = match response.text() {
             Ok(text) => Html::parse_document(&text),
             Err(e) => {
@@ -184,7 +184,7 @@ impl Scraper {
         {
             Some(_) => (),
             None => {
-                //println!("Hotspot Empty {} {} {}", url, loc_code, &sleep);
+                println!("Hotspot Empty {} {} {}", url, loc_code, &sleep);
                 thread::sleep(Duration::from_secs(sleep));
                 return self.scrape_page(loc, time, date_query, min(MAX_BACKOFF, 2 * sleep));
             }
