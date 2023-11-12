@@ -21,6 +21,7 @@ static BASE_URL: &str = "https://ebird.org/targets";
 static HOME_URL: &str = "https://ebird.org/home";
 
 static MAX_BACKOFF: u64 = 256;
+static MIN_BACKOFF: u64 = 5;
 
 pub(crate) struct Scraper {
     client: Client,
@@ -184,7 +185,10 @@ impl Scraper {
         {
             Some(_) => (),
             None => {
-                println!("Hotspot Empty {} {} {}", url, loc_code, &sleep);
+                if sleep > 200 {
+                    println!("Hotspot Empty {} {} {}", url, loc_code, &sleep);
+                    return empty_table();
+                }
                 thread::sleep(Duration::from_secs(sleep));
                 return self.scrape_page(loc, time, date_query, min(MAX_BACKOFF, 2 * sleep));
             }
@@ -286,7 +290,7 @@ pub(crate) fn scrape_pages(scraper: Scraper) -> DataFrame {
     let output_list = payloads
         .into_par_iter()
         .map(|((row, loc), time)| {
-            let mut df = arc_scraper.scrape_page(loc, &time, &date_query, 1);
+            let mut df = arc_scraper.scrape_page(loc, &time, &date_query, MIN_BACKOFF);
             add_columns(&mut df, &row, &time);
             df
         })
