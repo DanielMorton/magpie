@@ -4,12 +4,11 @@ use reqwest::blocking::Client;
 use rpassword::prompt_password;
 use scraper::{Html, Selector};
 
-pub(crate) static LOGIN_URL: &str = "https://secure.birds.cornell.edu/cassso/login";
+static LOGIN_URL: &str = "https://secure.birds.cornell.edu/cassso/login";
 
 fn get_token(client: &Client) -> String {
     let response = client
         .get(LOGIN_URL)
-        //.header(CONNECTION, "keep-alive")
         .send()
         .unwrap()
         .text()

@@ -73,31 +73,31 @@ impl Selectors {
         }
     }
 
-    pub(crate) fn a(&self) -> &Selector {
+    pub(super) fn a(&self) -> &Selector {
         &self.a
     }
-    pub(crate) fn hotspot_select(&self) -> &Selector {
+    pub(super) fn hotspot_select(&self) -> &Selector {
         &self.hotspot_select
     }
-    pub(crate) fn native(&self) -> &Selector {
+    pub(super) fn native(&self) -> &Selector {
         &self.native
     }
-    pub(crate) fn percent(&self) -> &Selector {
+    pub(super) fn percent(&self) -> &Selector {
         &self.percent
     }
-    pub(crate) fn region_select(&self) -> &Selector {
+    pub(super) fn region_select(&self) -> &Selector {
         &self.region_select
     }
-    pub(crate) fn rows(&self) -> &Selector {
+    pub(super) fn rows(&self) -> &Selector {
         &self.rows
     }
-    pub(crate) fn sci_name(&self) -> &Selector {
+    pub(super) fn sci_name(&self) -> &Selector {
         &self.sci_name
     }
-    pub(crate) fn species(&self) -> &Selector {
+    pub(super) fn species(&self) -> &Selector {
         &self.species
     }
-    pub(crate) fn species_count(&self) -> &Selector {
+    pub(super) fn species_count(&self) -> &Selector {
         &self.species_count
     }
 }
