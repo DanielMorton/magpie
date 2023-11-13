@@ -1,8 +1,6 @@
 use crate::row::LocationRow;
 use crate::scrape_params::{DateRange, ListLevel, ListType};
-use itertools::Itertools;
 use polars::prelude::DataFrame;
-use polars::prelude::NamedFrom;
 use reqwest::blocking::{Client, Response};
 use std::ops::Deref;
 use std::thread;

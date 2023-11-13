@@ -1,12 +1,11 @@
-use std::str::FromStr;
-use std::sync::Arc;
-use polars::prelude::{DataFrame, NamedFrom, Series};
-use scraper::ElementRef;
 use crate::row::SpeciesRow;
 use crate::scraper::selectors::Selectors;
+use polars::prelude::{DataFrame, NamedFrom, Series};
+use scraper::ElementRef;
+use std::str::FromStr;
+use std::sync::Arc;
 
-pub(super) fn scrape_table(selectors: &Arc<Selectors>,
-                           table: ElementRef) -> DataFrame {
+pub(super) fn scrape_table(selectors: &Arc<Selectors>, table: ElementRef) -> DataFrame {
     let df_row = table
         .select(&selectors.rows())
         .map(|row| {

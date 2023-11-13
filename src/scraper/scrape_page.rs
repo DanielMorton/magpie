@@ -1,11 +1,3 @@
-use std::str::FromStr;
-use std::sync::Arc;
-use std::thread;
-use std::time::{Duration, Instant};
-use itertools::Itertools;
-use polars::prelude::DataFrame;
-use rayon::prelude::IntoParallelIterator;
-use scraper::Html;
 use crate::print_hms;
 use crate::row::LocationRow;
 use crate::scrape_params::ListLevel;
@@ -13,6 +5,14 @@ use crate::scraper::scrape_table::scrape_table;
 use crate::scraper::scraper::Scraper;
 use crate::scraper::selectors::Selectors;
 use crate::table::{add_columns, empty_table};
+use itertools::Itertools;
+use polars::prelude::DataFrame;
+use rayon::prelude::*;
+use scraper::Html;
+use std::str::FromStr;
+use std::sync::Arc;
+use std::thread;
+use std::time::{Duration, Instant};
 
 static HOTSPOT: &str = "hotspot";
 static MIN_BACKOFF: u64 = 5;
@@ -35,7 +35,7 @@ fn scrape_page(
             println!("{}", e);
             //println!("HTML Empty {} {} {}", url, loc_code, &sleep);
             thread::sleep(Duration::from_secs(sleep));
-            return scrape_page(scraper, selectors, loc, time, date_query,  2 * sleep);
+            return scrape_page(scraper, selectors, loc, time, date_query, 2 * sleep);
         }
     };
     let (doc_selector, doc_format) = if scraper.list_level == ListLevel::Hotspot {
@@ -80,7 +80,6 @@ fn scrape_page(
     }
 }
 
-
 pub fn scrape_pages(scraper: Scraper) -> DataFrame {
     let date_query = Arc::new(vec![("t2", scraper.date_range.to_string())]);
     let selectors = Arc::new(Selectors::new());
@@ -100,7 +99,14 @@ pub fn scrape_pages(scraper: Scraper) -> DataFrame {
     let output_list = payloads
         .into_par_iter()
         .map(|((row, loc), time)| {
-            let mut df = scrape_page(&arc_scraper, &selectors, loc, &time, &date_query, MIN_BACKOFF);
+            let mut df = scrape_page(
+                &arc_scraper,
+                &selectors,
+                loc,
+                &time,
+                &date_query,
+                MIN_BACKOFF,
+            );
             add_columns(&mut df, &row, &time);
             df
         })

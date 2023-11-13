@@ -7,12 +7,7 @@ use scraper::{Html, Selector};
 static LOGIN_URL: &str = "https://secure.birds.cornell.edu/cassso/login";
 
 fn get_token(client: &Client) -> String {
-    let response = client
-        .get(LOGIN_URL)
-        .send()
-        .unwrap()
-        .text()
-        .unwrap();
+    let response = client.get(LOGIN_URL).send().unwrap().text().unwrap();
     let doc = Html::parse_document(&response);
     let selector = Selector::parse(r#"input[name="lt"]"#).unwrap();
     let token = match doc
