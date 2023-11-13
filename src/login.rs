@@ -5,11 +5,12 @@ use rpassword::prompt_password;
 use scraper::{Html, Selector};
 
 static LOGIN_URL: &str = "https://secure.birds.cornell.edu/cassso/login";
+static TOKEN: &str = r#"input[name="lt"]"#;
 
 fn get_token(client: &Client) -> String {
     let response = client.get(LOGIN_URL).send().unwrap().text().unwrap();
     let doc = Html::parse_document(&response);
-    let selector = Selector::parse(r#"input[name="lt"]"#).unwrap();
+    let selector = Selector::parse(TOKEN).unwrap();
     let token = match doc
         .select(&selector)
         .next()

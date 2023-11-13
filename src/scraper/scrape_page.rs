@@ -1,10 +1,8 @@
 use crate::print_hms;
-use crate::row::LocationRow;
-use crate::scrape_params::ListLevel;
+use crate::scraper::row::LocationRow;
 use crate::scraper::scrape_table::scrape_table;
 use crate::scraper::scraper::Scraper;
 use crate::scraper::selectors::Selectors;
-use crate::table::{add_columns, empty_table};
 use itertools::Itertools;
 use polars::prelude::DataFrame;
 use rayon::prelude::*;
@@ -13,10 +11,11 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
+use crate::scraper::{HOTSPOT, MAX_BACKOFF, MIN_BACKOFF, REGION};
+use crate::scraper::scrape_params::ListLevel;
+use crate::scraper::table::{add_columns, empty_table};
 
-static HOTSPOT: &str = "hotspot";
-static MIN_BACKOFF: u64 = 5;
-static REGION: &str = "region";
+
 
 fn scrape_page(
     scraper: &Arc<Scraper>,
@@ -33,7 +32,6 @@ fn scrape_page(
         Ok(text) => Html::parse_document(&text),
         Err(e) => {
             println!("{}", e);
-            //println!("HTML Empty {} {} {}", url, loc_code, &sleep);
             thread::sleep(Duration::from_secs(sleep));
             return scrape_page(scraper, selectors, loc, time, date_query, 2 * sleep);
         }
@@ -51,7 +49,7 @@ fn scrape_page(
     {
         Some(_) => (),
         None => {
-            if sleep > 200 {
+            if sleep >= MAX_BACKOFF {
                 println!("Hotspot Empty {} {} {}", url, loc_code, &sleep);
                 return empty_table();
             }
@@ -73,7 +71,6 @@ fn scrape_page(
             None => empty_table(),
         },
         None => {
-            //println!("Doc Empty {} {} {}", url, loc_code, &sleep);
             thread::sleep(Duration::from_secs(sleep));
             scrape_page(scraper, selectors, loc, time, date_query, 2 * sleep)
         }

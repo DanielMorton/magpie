@@ -1,11 +1,13 @@
-use crate::row::SpeciesRow;
+use crate::scraper::row::SpeciesRow;
 use crate::scraper::selectors::Selectors;
 use polars::prelude::{DataFrame, NamedFrom, Series};
 use scraper::ElementRef;
 use std::str::FromStr;
 use std::sync::Arc;
+use crate::scraper::{COMMON_NAME, PERCENT, SCIENTIFIC_NAME};
 
-pub(super) fn scrape_table(selectors: &Arc<Selectors>, table: ElementRef) -> DataFrame {
+pub(super) fn scrape_table(selectors: &Arc<Selectors>,
+                           table: ElementRef) -> DataFrame {
     let df_row = table
         .select(&selectors.rows())
         .map(|row| {
@@ -45,18 +47,18 @@ pub(super) fn scrape_table(selectors: &Arc<Selectors>, table: ElementRef) -> Dat
         })
         .collect::<Vec<_>>();
     let common_name = Series::new(
-        "common name",
+        COMMON_NAME,
         df_row.iter().map(|r| r.common_name()).collect::<Vec<_>>(),
     );
     let scietific_name = Series::new(
-        "scientific name",
+        SCIENTIFIC_NAME,
         df_row
             .iter()
             .map(|r| r.scientific_name())
             .collect::<Vec<_>>(),
     );
     let percent = Series::new(
-        "percent",
+        PERCENT,
         df_row.iter().map(|r| r.percent()).collect::<Vec<_>>(),
     );
     return DataFrame::new(vec![common_name, scietific_name, percent]).unwrap();

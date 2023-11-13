@@ -10,6 +10,12 @@ pub(crate) enum ListType {
     Country,
     Global,
 }
+
+impl ListType {
+    pub(super) fn to_code(&self) -> String {
+        self.to_string() + "_code"
+    }
+}
 #[derive(Display, Debug, PartialEq)]
 pub(crate) enum DateRange {
     #[strum(serialize = "life")]
@@ -27,4 +33,10 @@ pub(crate) enum ListLevel {
     SubRegion,
     #[strum(serialize = "hotspot")]
     Hotspot,
+}
+
+impl ListLevel {
+    pub(super) fn to_code(&self) -> String {
+        self.to_string() + "_code"
+    }
 }

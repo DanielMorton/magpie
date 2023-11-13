@@ -1,23 +1,18 @@
-use crate::row::LocationRow;
-use crate::scrape_params::{DateRange, ListLevel, ListType};
 use polars::prelude::DataFrame;
 use reqwest::blocking::{Client, Response};
 use std::ops::Deref;
 use std::thread;
 use std::time::Duration;
+use crate::scraper::{BASE_URL, HOME_URL, HOTSPOT_COLUMNS, LOGIN_URL, REGION_COLUMNS};
+use crate::scraper::row::LocationRow;
+use crate::scraper::scrape_params::{DateRange, ListLevel, ListType};
 
-static BASE_URL: &str = "https://ebird.org/targets";
-static HOME_URL: &str = "https://ebird.org/home";
-static LOGIN_URL: &str = "https://secure.birds.cornell.edu/cassso/login";
 
-static HOTSPOT_COLUMNS: &[&str] = &["country", "region", "sub_region", "hotspot"];
-
-static REGION_COLUMNS: &[&str] = &["country", "region", "sub_region"];
 
 pub struct Scraper {
     client: Client,
-    pub(crate) date_range: DateRange,
-    pub(crate) list_level: ListLevel,
+    pub(super) date_range: DateRange,
+    pub(super) list_level: ListLevel,
     list_type: ListType,
     loc_df: DataFrame,
     time_range: Vec<(u8, u8)>,
@@ -67,11 +62,11 @@ impl Scraper {
     }
 
     pub(super) fn make_loc_payload(&self) -> Vec<Vec<(String, String)>> {
-        let list_level_code = self.list_level.to_string() + "_code";
+        let list_level_code = self.list_level.to_code();
         let columns = if self.list_type == ListType::Global {
             vec![list_level_code]
         } else {
-            let list_type_code = self.list_type.to_string() + "_code";
+            let list_type_code = self.list_type.to_code();
             vec![list_level_code, list_type_code]
         };
         let mut col_iters = match self.loc_df.columns(columns) {

@@ -10,7 +10,7 @@ static SCI_NAME: &str = r#"em[class="sci"]"#;
 static SPECIES: &str = r#"div[class="SpecimenHeader"]"#;
 static SPECIES_COUNT: &str = r#"strong[class="Heading Heading--h1"]"#;
 
-pub(crate) struct Selectors {
+pub(super) struct Selectors {
     a: Selector,
     hotspot_select: Selector,
     native: Selector,
@@ -23,7 +23,7 @@ pub(crate) struct Selectors {
 }
 
 impl Selectors {
-    pub(crate) fn new() -> Self {
+    pub(super) fn new() -> Self {
         let a = match Selector::parse(A) {
             Ok(seletor) => seletor,
             Err(e) => panic!("{}", e),

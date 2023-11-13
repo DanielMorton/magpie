@@ -1,6 +1,6 @@
-use crate::scrape_params::ListLevel::{Hotspot, SubRegion};
-use crate::scrape_params::{DateRange, ListLevel, ListType};
 use clap::{arg, ArgGroup, ArgMatches, Command};
+use crate::scraper::scrape_params::{DateRange, ListLevel, ListType};
+use crate::scraper::scrape_params::ListLevel::{Hotspot, SubRegion};
 
 static DEFAULT_LOCATION: &str = "regions.csv";
 

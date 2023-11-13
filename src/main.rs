@@ -1,9 +1,6 @@
 mod login;
 mod parse;
-mod row;
-mod scrape_params;
 mod scraper;
-mod table;
 
 extern crate strum;
 #[macro_use]
