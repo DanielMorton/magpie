@@ -49,12 +49,13 @@ fn scrape_page(
     {
         Some(_) => (),
         None => {
-            if sleep >= MAX_BACKOFF {
+            return if sleep >= MAX_BACKOFF {
                 println!("Hotspot Empty {} {} {}", url, loc_code, &sleep);
-                return empty_table();
+                empty_table()
+            } else {
+                thread::sleep(Duration::from_secs(sleep));
+                scrape_page(scraper, selectors, loc, time, date_query, 2 * sleep)
             }
-            thread::sleep(Duration::from_secs(sleep));
-            return scrape_page(scraper, selectors, loc, time, date_query, 2 * sleep);
         }
     }
     match doc
