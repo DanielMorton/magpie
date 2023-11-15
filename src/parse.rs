@@ -4,7 +4,7 @@ use crate::scraper::scrape_params::ListLevel::{Hotspot, SubRegion};
 
 static DEFAULT_LOCATION: &str = "regions.csv";
 
-pub(crate) fn parse() -> ArgMatches {
+pub(super) fn parse() -> ArgMatches {
     Command::new("magpie")
         .arg(arg!(--local))
         .arg(arg!(--region))
@@ -40,7 +40,7 @@ pub(crate) fn parse() -> ArgMatches {
         .get_matches()
 }
 
-pub(crate) trait MagpieParse {
+pub(super) trait MagpieParse {
     fn get_date_range(&self) -> DateRange;
 
     fn get_list_type(&self) -> ListType;

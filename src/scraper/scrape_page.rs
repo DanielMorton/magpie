@@ -11,6 +11,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
+use polars::functions::concat_df_diagonal;
 use crate::scraper::{HOTSPOT, MAX_BACKOFF, MIN_BACKOFF, REGION};
 use crate::scraper::scrape_params::ListLevel;
 use crate::scraper::table::{add_columns, empty_table};
@@ -111,8 +112,15 @@ pub fn scrape_pages(scraper: Scraper) -> DataFrame {
         .collect::<Vec<_>>();
 
     print_hms(&s);
-    output_list
-        .into_iter()
-        .reduce(|a, b| a.vstack(&b).unwrap())
-        .unwrap()
+    let s2 = Instant::now();
+    match concat_df_diagonal(&output_list) {
+        Ok(df) => {
+            print_hms(&s2);
+            df
+        },
+        Err(e) => {
+            print_hms(&s2);
+            panic!("{}", e)
+        }
+    }
 }
