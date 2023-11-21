@@ -25,10 +25,3 @@ static REGION_COLUMNS: &[&str] = &["country", "region", "sub_region"];
 static START_MONTH: &str = "start month";
 static SUB_REGION: &str = "sub_region";
 static SCIENTIFIC_NAME: &str = "scientific name";
-
-
-
-
-
-
-

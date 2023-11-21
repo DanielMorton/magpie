@@ -1,13 +1,11 @@
+use crate::scraper::row::LocationRow;
+use crate::scraper::scrape_params::{DateRange, ListLevel, ListType};
+use crate::scraper::{BASE_URL, HOME_URL, HOTSPOT_COLUMNS, LOGIN_URL, REGION_COLUMNS};
 use polars::prelude::DataFrame;
 use reqwest::blocking::{Client, Response};
 use std::ops::Deref;
 use std::thread;
 use std::time::Duration;
-use crate::scraper::{BASE_URL, HOME_URL, HOTSPOT_COLUMNS, LOGIN_URL, REGION_COLUMNS};
-use crate::scraper::row::LocationRow;
-use crate::scraper::scrape_params::{DateRange, ListLevel, ListType};
-
-
 
 pub struct Scraper {
     client: Client,
@@ -90,10 +88,7 @@ impl Scraper {
                 let mut r = 1;
                 for iter in &mut col_iters {
                     let value = iter.next().unwrap().to_string();
-                    payload.push((
-                        format!("r{r}"),
-                        self.remove_quote(&value),
-                    ));
+                    payload.push((format!("r{r}"), self.remove_quote(&value)));
                     r += 1;
                 }
                 payload
@@ -102,7 +97,7 @@ impl Scraper {
 
         if self.list_type == ListType::Global {
             loc_payload.iter_mut().for_each(|payload| {
-                payload.push((format!("r2"), format!("world")));
+                payload.push(("r2".to_string(), "world".to_string()));
             });
         }
         loc_payload

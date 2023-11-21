@@ -1,6 +1,6 @@
-use clap::{arg, ArgGroup, ArgMatches, Command};
-use crate::scraper::scrape_params::{DateRange, ListLevel, ListType};
 use crate::scraper::scrape_params::ListLevel::{Hotspot, SubRegion};
+use crate::scraper::scrape_params::{DateRange, ListLevel, ListType};
+use clap::{arg, value_parser, Arg, ArgGroup, ArgMatches, Command};
 
 static DEFAULT_LOCATION: &str = "regions.csv";
 
@@ -26,7 +26,12 @@ pub(super) fn parse() -> ArgMatches {
         )
         .arg(arg!(--year))
         .arg(arg!(--all))
-        .arg(arg!(--month <NUM>))
+        .arg(
+            Arg::new("month")
+                .long("month")
+                .required(false)
+                .value_parser(value_parser!(u8)),
+        )
         .arg(arg!(--range <RANGE>))
         .group(
             ArgGroup::new("time_range")

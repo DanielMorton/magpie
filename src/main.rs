@@ -1,12 +1,13 @@
+mod loc;
 mod login;
 mod parse;
 mod scraper;
-mod loc;
 
 extern crate strum;
 #[macro_use]
 extern crate strum_macros;
 
+use crate::loc::load_data;
 use crate::scraper::scrape_pages;
 use parse::MagpieParse;
 use polars::io::prelude::*;
@@ -14,8 +15,6 @@ use polars::prelude::CsvWriter;
 use scraper::Scraper;
 use std::fs::File;
 use std::time::Instant;
-use crate::loc::load_data;
-
 
 pub fn print_hms(start: &Instant) {
     let millis = start.elapsed().as_millis();

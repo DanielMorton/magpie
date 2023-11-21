@@ -15,8 +15,7 @@ fn get_token(client: &Client) -> String {
         .select(&selector)
         .next()
         .map(|t| t.value())
-        .map(|t| t.attr("value"))
-        .flatten()
+        .and_then(|t| t.attr("value"))
     {
         Some(t) => t.to_string(),
         None => panic!("No Login Token Provided."),
@@ -43,5 +42,5 @@ pub(crate) fn login() -> Client {
         Ok(r) => r,
         Err(e) => panic!("Login Failed.\n {}", e),
     };
-    return client;
+    client
 }
