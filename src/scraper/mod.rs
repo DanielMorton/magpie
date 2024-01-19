@@ -5,6 +5,7 @@ mod scrape_table;
 mod scraper;
 mod selectors;
 mod table;
+mod utils;
 
 pub use scrape_page::scrape_pages;
 pub use scraper::Scraper;

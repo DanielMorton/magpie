@@ -6,6 +6,7 @@ use reqwest::blocking::{Client, Response};
 use std::ops::Deref;
 use std::thread;
 use std::time::Duration;
+use crate::scraper::utils::remove_quote;
 
 pub struct Scraper {
     client: Client,
@@ -35,13 +36,6 @@ impl Scraper {
         }
     }
 
-    fn remove_quote(&self, value: &str) -> String {
-        let mut chars = value.chars();
-        chars.next();
-        chars.next_back();
-        chars.as_str().to_string()
-    }
-
     pub(super) fn make_loc_vec(&self) -> Vec<LocationRow> {
         let loc_vec = if self.list_level == ListLevel::Hotspot {
             HOTSPOT_COLUMNS
@@ -57,12 +51,7 @@ impl Scraper {
         .collect::<Vec<_>>();
         (0..self.loc_df.shape().0)
             .map(|_| {
-                let mut l = Vec::new();
-                for iter in &mut loc {
-                    let value = iter.next().unwrap().to_string();
-                    l.push(self.remove_quote(&value))
-                }
-                LocationRow::new(l)
+                LocationRow::new(&mut loc)
             })
             .collect::<Vec<LocationRow>>()
     }
@@ -88,7 +77,7 @@ impl Scraper {
                 let mut r = 1;
                 for iter in &mut col_iters {
                     let value = iter.next().unwrap().to_string();
-                    payload.push((format!("r{r}"), self.remove_quote(&value)));
+                    payload.push((format!("r{r}"), remove_quote(&value)));
                     r += 1;
                 }
                 payload

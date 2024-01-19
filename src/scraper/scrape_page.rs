@@ -1,4 +1,3 @@
-use crate::print_hms;
 use crate::scraper::row::LocationRow;
 use crate::scraper::scrape_params::ListLevel;
 use crate::scraper::scrape_table::scrape_table;
@@ -16,6 +15,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
+use crate::scraper::utils::print_hms;
 
 fn scrape_page(
     scraper: &Arc<Scraper>,

@@ -38,18 +38,18 @@ pub(super) fn scrape_table(selectors: &Arc<Selectors>, table: ElementRef) -> Dat
         .collect::<Vec<_>>();
     let common_name = Series::new(
         COMMON_NAME,
-        df_row.iter().map(|r| r.common_name()).collect::<Vec<_>>(),
+        df_row.iter().map(|r| r.common_name).collect::<Vec<_>>(),
     );
     let scietific_name = Series::new(
         SCIENTIFIC_NAME,
         df_row
             .iter()
-            .map(|r| r.scientific_name())
+            .map(|r| r.scientific_name)
             .collect::<Vec<_>>(),
     );
     let percent = Series::new(
         PERCENT,
-        df_row.iter().map(|r| r.percent()).collect::<Vec<_>>(),
+        df_row.iter().map(|r| r.percent).collect::<Vec<_>>(),
     );
     DataFrame::new(vec![common_name, scietific_name, percent]).unwrap()
 }

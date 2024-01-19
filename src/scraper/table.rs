@@ -15,8 +15,8 @@ pub(super) fn add_columns(df: &mut DataFrame, row: &LocationRow, time: &[(String
         .unwrap();
     df.with_column(Series::new(COUNTRY, vec![row.country(); size]))
         .unwrap();
-    row.hotspot().iter().for_each(|hotspot| {
-        df.with_column(Series::new(HOTSPOT, vec![hotspot.clone(); size]))
+    row.hotspot().iter().for_each(|&hotspot| {
+        df.with_column(Series::new(HOTSPOT, vec![hotspot; size]))
             .unwrap();
     });
     df.with_column(Series::new(START_MONTH, vec![time[0].1 as u32; size]))
