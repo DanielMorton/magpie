@@ -1,6 +1,5 @@
-use polars::series::SeriesIter;
 use crate::scraper::utils::remove_quote;
-
+use polars::series::SeriesIter;
 
 #[derive(Debug, Clone)]
 /**
@@ -16,7 +15,6 @@ When scraping on the Hotspot level, the optional hotpsot value is included. Othe
  */
 
 pub struct LocationRow {
-
     /// Country of location to be scraped.
     pub(crate) country: String,
 
@@ -32,14 +30,14 @@ pub struct LocationRow {
 
 /// Implementation of LocationRow.
 impl LocationRow {
-
     /// Creates LocationRow from a vector of data extracted from a DataFrame row.
     pub(crate) fn new(loc: &mut Vec<SeriesIter>) -> Self {
-
         if loc.len() == 3 {
-            LocationRow::new_location(remove_quote(&loc[0].next().unwrap().to_string()),
-                                      remove_quote(&loc[1].next().unwrap().to_string()),
-                                      remove_quote(&loc[2].next().unwrap().to_string()))
+            LocationRow::new_location(
+                remove_quote(&loc[0].next().unwrap().to_string()),
+                remove_quote(&loc[1].next().unwrap().to_string()),
+                remove_quote(&loc[2].next().unwrap().to_string()),
+            )
         } else {
             LocationRow::new_hotspot(
                 remove_quote(&loc[0].next().unwrap().to_string()),
@@ -81,7 +79,9 @@ impl LocationRow {
     }
 
     /// Returns the LocationRow region.
-    pub(crate) fn region(&self) -> &str { self.region.as_str() }
+    pub(crate) fn region(&self) -> &str {
+        self.region.as_str()
+    }
 
     /// Returns the LocationRow sub-region.
     pub(crate) fn sub_region(&self) -> &str {
@@ -89,17 +89,30 @@ impl LocationRow {
     }
 
     /// Returns the LocationRow hotspot.
-    pub(crate) fn hotspot(&self) -> Option<&str> { self.hotspot.as_ref().map(|s| s.as_str()) }
+    pub(crate) fn hotspot(&self) -> Option<&str> {
+        self.hotspot.as_deref()
+    }
 }
 
-
+/**
+Struct containing species data extracted from one row of scraped table. Consiststs of common name, if present,
+scientific name, if present, and the frequency of observations at a region or hotspot in percentage terms. If
+common or scientific name is absent, an empty string is stored.
+*/
 pub struct SpeciesRow<'a> {
+    /// Species common name.
     pub(crate) common_name: &'a str,
+
+    /// Species scientific name.
     pub(crate) scientific_name: &'a str,
+
+    /// Percent frequency of species detection at a region or hotspot.
     pub(crate) percent: f32,
 }
 
+/// Implementation of SpeciesRow
 impl<'a> SpeciesRow<'a> {
+    /// Creates SpeciesRow from common name, scientific name, and percent frequency of detections.
     pub(crate) fn new(common_name: &'a str, scientific_name: &'a str, percent: f32) -> Self {
         SpeciesRow {
             common_name,

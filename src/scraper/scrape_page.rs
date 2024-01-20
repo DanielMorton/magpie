@@ -1,9 +1,10 @@
 use crate::scraper::row::LocationRow;
-use crate::scraper::scrape_params::ListLevel;
+use crate::scraper::scrape_params::LocationLevel;
 use crate::scraper::scrape_table::scrape_table;
 use crate::scraper::scraper::Scraper;
 use crate::scraper::selectors::Selectors;
 use crate::scraper::table::{add_columns, empty_table};
+use crate::scraper::utils::print_hms;
 use crate::scraper::{HOTSPOT, MAX_BACKOFF, MIN_BACKOFF, REGION};
 use itertools::Itertools;
 use polars::functions::concat_df_diagonal;
@@ -15,8 +16,13 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
-use crate::scraper::utils::print_hms;
 
+/**
+ Scrapes species frequency data from a single page. Checks if correct URL is returned.
+ If the incorrect page is returned, retries after a delay. Delay time doubles after each retry.
+ Only returns data about native and naturalized species, exotics and escapees are discarded.
+ If no data for location and time parameters, returns an empty table.
+ */
 fn scrape_page(
     scraper: &Arc<Scraper>,
     selectors: &Arc<Selectors>,
@@ -102,10 +108,11 @@ fn scrape_page(
     }
 }
 
+
 pub fn scrape_pages(scraper: Scraper) -> DataFrame {
     let date_query = Arc::new(vec![("t2", scraper.date_range.to_string())]);
     let selectors = Arc::new(Selectors::new());
-    let (doc_selector, doc_format) = if scraper.list_level == ListLevel::Hotspot {
+    let (doc_selector, doc_format) = if scraper.location_level == LocationLevel::Hotspot {
         (selectors.hotspot_select(), HOTSPOT)
     } else {
         (selectors.region_select(), REGION)

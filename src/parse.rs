@@ -1,5 +1,5 @@
-use crate::scraper::scrape_params::ListLevel::{Hotspot, SubRegion};
-use crate::scraper::scrape_params::{DateRange, ListLevel, ListType};
+use crate::scraper::scrape_params::LocationLevel::{Hotspot, SubRegion};
+use crate::scraper::scrape_params::{DateRange, LocationLevel, ListType};
 use clap::{arg, value_parser, Arg, ArgGroup, ArgMatches, Command};
 
 static DEFAULT_LOCATION: &str = "regions.csv";
@@ -50,7 +50,7 @@ pub(super) trait MagpieParse {
 
     fn get_list_type(&self) -> ListType;
 
-    fn get_loc_data(&self) -> (&str, ListLevel);
+    fn get_loc_data(&self) -> (&str, LocationLevel);
 
     fn get_output_file(&self) -> &str;
 
@@ -103,7 +103,7 @@ impl MagpieParse for ArgMatches {
         }
     }
 
-    fn get_loc_data(&self) -> (&str, ListLevel) {
+    fn get_loc_data(&self) -> (&str, LocationLevel) {
         match self.get_one::<String>("hotspot") {
             Some(f) => (f, Hotspot),
             None => match self.get_one::<String>("geo") {

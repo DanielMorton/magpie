@@ -14,9 +14,6 @@ use polars::io::prelude::*;
 use polars::prelude::CsvWriter;
 use scraper::Scraper;
 use std::fs::File;
-use std::time::Instant;
-
-
 
 fn main() {
     let matches = parse::parse();

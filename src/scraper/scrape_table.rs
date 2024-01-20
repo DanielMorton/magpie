@@ -42,10 +42,7 @@ pub(super) fn scrape_table(selectors: &Arc<Selectors>, table: ElementRef) -> Dat
     );
     let scietific_name = Series::new(
         SCIENTIFIC_NAME,
-        df_row
-            .iter()
-            .map(|r| r.scientific_name)
-            .collect::<Vec<_>>(),
+        df_row.iter().map(|r| r.scientific_name).collect::<Vec<_>>(),
     );
     let percent = Series::new(
         PERCENT,

@@ -1,19 +1,49 @@
 use crate::scraper::row::LocationRow;
-use crate::scraper::scrape_params::{DateRange, ListLevel, ListType};
+use crate::scraper::scrape_params::{DateRange, LocationLevel, ListType};
+use crate::scraper::utils::remove_quote;
 use crate::scraper::{BASE_URL, HOME_URL, HOTSPOT_COLUMNS, LOGIN_URL, REGION_COLUMNS};
 use polars::prelude::DataFrame;
 use reqwest::blocking::{Client, Response};
 use std::ops::Deref;
 use std::thread;
 use std::time::Duration;
-use crate::scraper::utils::remove_quote;
 
+/**
+ Struct containing Client and all data needed for scraping a set of pages. The client performs the
+ page requests.
+
+ The date_range refers to the temporal type of list for which the target species are extracted. Options are life list,
+ year list, month list, or day list.
+
+ The location level is spacial granularity of the location. Options are sub-region or hotspot.
+
+ List Type is the spacial type of the list for which target species are extracted. Options are global, country,
+ region, subregion, and hotspot.
+
+ loc_df is the DataFrame containing the location data.
+
+ Time range is the vector of time ranges, which may be single entry, in months for which the target species
+ are extracted. For each pair of start month and end month (which may be equal) only species present in a
+ given location between start month and end month inclusive are extracted.
+ */
 pub struct Scraper {
+
+    /// Client for making page requests.
     client: Client,
+
+    /// Time range of list type for which target species are extracted.
     pub(super) date_range: DateRange,
-    pub(super) list_level: ListLevel,
+
+    /// Type of location, hotspot or sub-region, for which target species are extracted.
+    pub(super) location_level: LocationLevel,
+
+    /// Typee of list for which target species are extracted.
     list_type: ListType,
+
+    /// DataFrame of locations for which data is extracted.
     loc_df: DataFrame,
+
+    /// Vector of time ranges for which data is extracted.
     time_range: Vec<(u8, u8)>,
 }
 
@@ -21,7 +51,7 @@ impl Scraper {
     pub(crate) fn new(
         client: Client,
         date_range: DateRange,
-        list_level: ListLevel,
+        list_level: LocationLevel,
         list_type: ListType,
         loc_df: DataFrame,
         time_range: Vec<(u8, u8)>,
@@ -29,7 +59,7 @@ impl Scraper {
         Scraper {
             client,
             date_range,
-            list_level,
+            location_level: list_level,
             list_type,
             loc_df,
             time_range,
@@ -37,7 +67,7 @@ impl Scraper {
     }
 
     pub(super) fn make_loc_vec(&self) -> Vec<LocationRow> {
-        let loc_vec = if self.list_level == ListLevel::Hotspot {
+        let loc_vec = if self.location_level == LocationLevel::Hotspot {
             HOTSPOT_COLUMNS
         } else {
             REGION_COLUMNS
@@ -50,14 +80,12 @@ impl Scraper {
         .map(|&s| s.iter())
         .collect::<Vec<_>>();
         (0..self.loc_df.shape().0)
-            .map(|_| {
-                LocationRow::new(&mut loc)
-            })
+            .map(|_| LocationRow::new(&mut loc))
             .collect::<Vec<LocationRow>>()
     }
 
     pub(super) fn make_loc_payload(&self) -> Vec<Vec<(String, String)>> {
-        let list_level_code = self.list_level.to_code();
+        let list_level_code = self.location_level.to_code();
         let columns = if self.list_type == ListType::Global {
             vec![list_level_code]
         } else {

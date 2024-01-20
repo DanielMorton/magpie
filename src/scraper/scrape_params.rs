@@ -28,14 +28,14 @@ pub(crate) enum DateRange {
     Day,
 }
 #[derive(Display, Debug, PartialEq)]
-pub(crate) enum ListLevel {
+pub(crate) enum LocationLevel {
     #[strum(serialize = "sub_region")]
     SubRegion,
     #[strum(serialize = "hotspot")]
     Hotspot,
 }
 
-impl ListLevel {
+impl LocationLevel {
     pub(super) fn to_code(&self) -> String {
         self.to_string() + "_code"
     }
