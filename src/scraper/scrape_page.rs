@@ -18,11 +18,11 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 /**
- Scrapes species frequency data from a single page. Checks if correct URL is returned.
- If the incorrect page is returned, retries after a delay. Delay time doubles after each retry.
- Only returns data about native and naturalized species, exotics and escapees are discarded.
- If no data for location and time parameters, returns an empty table.
- */
+Scrapes species frequency data from a single page. Checks if correct URL is returned.
+If the incorrect page is returned, retries after a delay. Delay time doubles after each retry.
+Only returns data about native and naturalized species, exotics and escapees are discarded.
+If no data for location and time parameters, returns an empty table.
+*/
 fn scrape_page(
     scraper: &Arc<Scraper>,
     selectors: &Arc<Selectors>,
@@ -107,7 +107,6 @@ fn scrape_page(
         }
     }
 }
-
 
 pub fn scrape_pages(scraper: Scraper) -> DataFrame {
     let date_query = Arc::new(vec![("t2", scraper.date_range.to_string())]);

@@ -1,5 +1,5 @@
 use crate::scraper::row::LocationRow;
-use crate::scraper::scrape_params::{DateRange, LocationLevel, ListType};
+use crate::scraper::scrape_params::{DateRange, ListType, LocationLevel};
 use crate::scraper::utils::remove_quote;
 use crate::scraper::{BASE_URL, HOME_URL, HOTSPOT_COLUMNS, LOGIN_URL, REGION_COLUMNS};
 use polars::prelude::DataFrame;
@@ -9,25 +9,24 @@ use std::thread;
 use std::time::Duration;
 
 /**
- Struct containing Client and all data needed for scraping a set of pages. The client performs the
- page requests.
+Struct containing Client and all data needed for scraping a set of pages. The client performs the
+page requests.
 
- The date_range refers to the temporal type of list for which the target species are extracted. Options are life list,
- year list, month list, or day list.
+The date_range refers to the temporal type of list for which the target species are extracted. Options are life list,
+year list, month list, or day list.
 
- The location level is spacial granularity of the location. Options are sub-region or hotspot.
+The location level is spacial granularity of the location. Options are sub-region or hotspot.
 
- List Type is the spacial type of the list for which target species are extracted. Options are global, country,
- region, subregion, and hotspot.
+List Type is the spacial type of the list for which target species are extracted. Options are global, country,
+region, subregion, and hotspot.
 
- loc_df is the DataFrame containing the location data.
+loc_df is the DataFrame containing the location data.
 
- Time range is the vector of time ranges, which may be single entry, in months for which the target species
- are extracted. For each pair of start month and end month (which may be equal) only species present in a
- given location between start month and end month inclusive are extracted.
- */
+Time range is the vector of time ranges, which may be single entry, in months for which the target species
+are extracted. For each pair of start month and end month (which may be equal) only species present in a
+given location between start month and end month inclusive are extracted.
+*/
 pub struct Scraper {
-
     /// Client for making page requests.
     client: Client,
 
@@ -47,7 +46,9 @@ pub struct Scraper {
     time_range: Vec<(u8, u8)>,
 }
 
+/// Implementation of Scraper struct.
 impl Scraper {
+    /// Constructor of Scraper struct from it's constituent components.
     pub(crate) fn new(
         client: Client,
         date_range: DateRange,
@@ -66,6 +67,8 @@ impl Scraper {
         }
     }
 
+    /// Make vector of all locations consisting of all country, region, sub-region, and (if applicable)
+    /// hotspot combinations.
     pub(super) fn make_loc_vec(&self) -> Vec<LocationRow> {
         let loc_vec = if self.location_level == LocationLevel::Hotspot {
             HOTSPOT_COLUMNS
@@ -85,12 +88,12 @@ impl Scraper {
     }
 
     pub(super) fn make_loc_payload(&self) -> Vec<Vec<(String, String)>> {
-        let list_level_code = self.location_level.to_code();
+        let location_level_code = self.location_level.to_code();
         let columns = if self.list_type == ListType::Global {
-            vec![list_level_code]
+            vec![location_level_code]
         } else {
             let list_type_code = self.list_type.to_code();
-            vec![list_level_code, list_type_code]
+            vec![location_level_code, list_type_code]
         };
         let mut col_iters = match self.loc_df.columns(columns) {
             Ok(loc_columns) => loc_columns,
