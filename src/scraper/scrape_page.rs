@@ -6,6 +6,7 @@ use crate::scraper::selectors::Selectors;
 use crate::scraper::table::{add_columns, empty_table};
 use crate::scraper::utils::print_hms;
 use crate::scraper::{HOTSPOT, MAX_BACKOFF, MIN_BACKOFF, REGION};
+use indicatif::{ParallelProgressIterator, ProgressStyle};
 use itertools::Itertools;
 use polars::functions::concat_df_diagonal;
 use polars::prelude::DataFrame;
@@ -136,8 +137,10 @@ pub fn scrape_pages(scraper: Scraper) -> DataFrame {
         .cartesian_product(time_query)
         .collect::<Vec<_>>();
     let s = Instant::now();
+    let style = ProgressStyle::with_template("{bar:100} {pos:>7}/{len:7} [{elapsed}] [{eta}]").unwrap();
     let output_list = payloads
         .into_par_iter()
+        .progress_with_style(style)
         .map(|((row, loc), time)| {
             let mut df = scrape_page(
                 &arc_scraper,
