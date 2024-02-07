@@ -1,12 +1,16 @@
 use crate::scraper::row::SpeciesRow;
 use crate::scraper::selectors::Selectors;
-use crate::scraper::{COMMON_NAME, PERCENT, SCIENTIFIC_NAME};
+use crate::scraper::{CHECKLISTS, COMMON_NAME, PERCENT, SCIENTIFIC_NAME};
 use polars::prelude::{DataFrame, NamedFrom, Series};
 use scraper::ElementRef;
 use std::str::FromStr;
 use std::sync::Arc;
 
-pub(super) fn scrape_table(selectors: &Arc<Selectors>, table: ElementRef) -> DataFrame {
+pub(super) fn scrape_table(
+    selectors: &Arc<Selectors>,
+    table: ElementRef,
+    checklists: i32,
+) -> DataFrame {
     let df_row = table
         .select(selectors.rows())
         .map(|row| {
@@ -48,5 +52,6 @@ pub(super) fn scrape_table(selectors: &Arc<Selectors>, table: ElementRef) -> Dat
         PERCENT,
         df_row.iter().map(|r| r.percent).collect::<Vec<_>>(),
     );
-    DataFrame::new(vec![common_name, scietific_name, percent]).unwrap()
+    let checklist_column = Series::new(CHECKLISTS, vec![checklists; df_row.len()]);
+    DataFrame::new(vec![common_name, scietific_name, percent, checklist_column]).unwrap()
 }

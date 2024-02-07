@@ -81,6 +81,13 @@ fn scrape_page(
             }*/
         }
     }
+    let checklists = doc
+        .select(selectors.checklists())
+        .next()
+        .and_then(|element| element.text().next())
+        .map(|text| text.chars().filter(|c| c.is_numeric()).collect::<String>())
+        .and_then(|c| c.parse::<i32>().ok())
+        .unwrap_or(0);
     match doc
         .select(selectors.species_count())
         .next()
@@ -89,7 +96,7 @@ fn scrape_page(
     {
         Some(0) => empty_table(),
         Some(_) => match doc.select(selectors.native()).next() {
-            Some(t) => scrape_table(selectors, t),
+            Some(t) => scrape_table(selectors, t, checklists),
             None => empty_table(),
         },
         None => {

@@ -1,6 +1,7 @@
 use scraper::Selector;
 
 static A: &str = "a";
+static CHECKLISTS: &str = r#"p[class="u-text-3 u-margin-none"]"#;
 static HOTSPOT_SELECT: &str = r#"a[href^="hotspot"]"#;
 static NATIVE: &str = r#"section[aria-labelledby="native-and-naturalized"]"#;
 static PERCENT: &str = r#"div[class="ResultsStats-stats"]"#;
@@ -12,6 +13,7 @@ static SPECIES_COUNT: &str = r#"strong[class="Heading Heading--h1"]"#;
 
 pub(super) struct Selectors {
     a: Selector,
+    checklists: Selector,
     hotspot_select: Selector,
     native: Selector,
     percent: Selector,
@@ -25,43 +27,49 @@ pub(super) struct Selectors {
 impl Selectors {
     pub(super) fn new() -> Self {
         let a = match Selector::parse(A) {
-            Ok(seletor) => seletor,
+            Ok(selector) => selector,
+            Err(e) => panic!("{}", e),
+        };
+
+        let checklists = match Selector::parse(CHECKLISTS) {
+            Ok(selector) => selector,
             Err(e) => panic!("{}", e),
         };
         let hotspot_select = match Selector::parse(HOTSPOT_SELECT) {
-            Ok(seletor) => seletor,
+            Ok(selector) => selector,
             Err(e) => panic!("{}", e),
         };
         let native = match Selector::parse(NATIVE) {
-            Ok(seletor) => seletor,
+            Ok(selector) => selector,
             Err(e) => panic!("{}", e),
         };
         let percent = match Selector::parse(PERCENT) {
-            Ok(seletor) => seletor,
+            Ok(selector) => selector,
             Err(e) => panic!("{}", e),
         };
         let region_select = match Selector::parse(REGION_SELECT) {
-            Ok(seletor) => seletor,
+            Ok(selector) => selector,
             Err(e) => panic!("{}", e),
         };
         let rows = match Selector::parse(ROW) {
-            Ok(seletor) => seletor,
+            Ok(selector) => selector,
             Err(e) => panic!("{}", e),
         };
         let sci_name = match Selector::parse(SCI_NAME) {
-            Ok(seletor) => seletor,
+            Ok(selector) => selector,
             Err(e) => panic!("{}", e),
         };
         let species = match Selector::parse(SPECIES) {
-            Ok(seletor) => seletor,
+            Ok(selector) => selector,
             Err(e) => panic!("{}", e),
         };
         let species_count = match Selector::parse(SPECIES_COUNT) {
-            Ok(seletor) => seletor,
+            Ok(selector) => selector,
             Err(e) => panic!("{}", e),
         };
         Selectors {
             a,
+            checklists,
             hotspot_select,
             native,
             percent,
@@ -75,6 +83,9 @@ impl Selectors {
 
     pub(super) fn a(&self) -> &Selector {
         &self.a
+    }
+    pub(super) fn checklists(&self) -> &Selector {
+        &self.checklists
     }
     pub(super) fn hotspot_select(&self) -> &Selector {
         &self.hotspot_select

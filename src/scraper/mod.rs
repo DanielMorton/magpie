@@ -11,6 +11,7 @@ pub use scrape_page::scrape_pages;
 pub use scraper::Scraper;
 
 static BASE_URL: &str = "https://ebird.org/targets";
+static CHECKLISTS: &str = "checklists";
 static COMMON_NAME: &str = "common name";
 static COUNTRY: &str = "country";
 static END_MONTH: &str = "end month";
