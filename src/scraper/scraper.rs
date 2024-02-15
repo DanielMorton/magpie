@@ -98,11 +98,11 @@ impl Scraper {
     }
 
     fn make_loc_payload(&self) -> Vec<Vec<(String, String)>> {
-        let location_level_code = self.location_level.to_code();
+        let location_level_code = self.location_level.to_string();
         let columns = if self.list_type == ListType::Global {
             vec![location_level_code]
         } else {
-            let list_type_code = self.list_type.to_code();
+            let list_type_code = self.list_type.to_string();
             vec![location_level_code, list_type_code]
         };
         let mut col_iters = match self.loc_df.columns(columns) {

@@ -1,20 +1,27 @@
+/**
+ Enumerates all possible geographic list types.
+
+ If LocationLevel is Hotspot, then only Hotspot and Global are available. If ListType is Hotspot all
+ species needed for that hotspot are extracted. If ListType is global, only those species not on the global
+ life list are extracted.
+
+ If LocationLevel is SubRegion, then SubRegion, Region, Country, and Global are available ListTypes. If ListType
+ is SubRegin all species need for that sub-region are extracted. If ListType is Region, then only those species
+ not already on that region's life list are extracted. In similar fashion, a ListType of Country restricts
+ attention to species not already aquired for the country and a ListType of Global excludes all species already
+ on the global life list.
+ */
 #[derive(Display, Debug, PartialEq)]
 pub(crate) enum ListType {
-    #[strum(serialize = "hotspot")]
+    #[strum(serialize = "hotspot_code")]
     Hotspot,
-    #[strum(serialize = "sub_region")]
-    Local,
-    #[strum(serialize = "region")]
+    #[strum(serialize = "sub_region_code")]
+    SubRegion,
+    #[strum(serialize = "region_code")]
     Region,
-    #[strum(serialize = "country")]
+    #[strum(serialize = "country_code")]
     Country,
     Global,
-}
-
-impl ListType {
-    pub(super) fn to_code(&self) -> String {
-        self.to_string() + "_code"
-    }
 }
 #[derive(Display, Debug, PartialEq)]
 pub(crate) enum DateRange {
@@ -29,14 +36,8 @@ pub(crate) enum DateRange {
 }
 #[derive(Display, Debug, PartialEq)]
 pub(crate) enum LocationLevel {
-    #[strum(serialize = "sub_region")]
+    #[strum(serialize = "sub_region_code")]
     SubRegion,
-    #[strum(serialize = "hotspot")]
+    #[strum(serialize = "hotspot_code")]
     Hotspot,
-}
-
-impl LocationLevel {
-    pub(super) fn to_code(&self) -> String {
-        self.to_string() + "_code"
-    }
 }

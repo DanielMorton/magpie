@@ -88,7 +88,7 @@ impl MagpieParse for ArgMatches {
         match self.get_one::<String>("geo") {
             Some(_) => {
                 if self.get_flag("local") {
-                    ListType::Local
+                    ListType::SubRegion
                 } else if self.get_flag("region") {
                     ListType::Region
                 } else if self.get_flag("country") {
