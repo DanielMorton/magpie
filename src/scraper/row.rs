@@ -93,31 +93,3 @@ impl LocationRow {
         self.hotspot.as_deref()
     }
 }
-
-/**
-Struct containing species data extracted from one row of scraped table. Consiststs of common name, if present,
-scientific name, if present, and the frequency of observations at a region or hotspot in percentage terms. If
-common or scientific name is absent, an empty string is stored.
-*/
-pub struct SpeciesRow<'a> {
-    /// Species common name.
-    pub(crate) common_name: &'a str,
-
-    /// Species scientific name.
-    pub(crate) scientific_name: &'a str,
-
-    /// Percent frequency of species detection at a region or hotspot.
-    pub(crate) percent: f32,
-}
-
-/// Implementation of SpeciesRow
-impl<'a> SpeciesRow<'a> {
-    /// Creates SpeciesRow from common name, scientific name, and percent frequency of detections.
-    pub(crate) fn new(common_name: &'a str, scientific_name: &'a str, percent: f32) -> Self {
-        SpeciesRow {
-            common_name,
-            scientific_name,
-            percent,
-        }
-    }
-}

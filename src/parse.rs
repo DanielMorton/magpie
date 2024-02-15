@@ -5,11 +5,11 @@ use clap::{arg, value_parser, Arg, ArgGroup, ArgMatches, Command};
 static DEFAULT_LOCATION: &str = "regions.csv";
 
 /**
-  Returns all the command line inputs. These are the list type, date range, time range (the number
-  of months covered) and the type of location (sub-region or hotspot) for which data is extracted.
-  The location tag accepts as input the csv file containing the locations for which data is to be
-  scraped. An output csv file must also be specified.
- */
+ Returns all the command line inputs. These are the list type, date range, time range (the number
+ of months covered) and the type of location (sub-region or hotspot) for which data is extracted.
+ The location tag accepts as input the csv file containing the locations for which data is to be
+ scraped. An output csv file must also be specified.
+*/
 pub(super) fn parse() -> ArgMatches {
     Command::new("magpie")
         .arg(arg!(--local))
@@ -52,15 +52,14 @@ pub(super) fn parse() -> ArgMatches {
 }
 
 /**
-  Trait for parsing the magpie specific command line arguments.
- */
+ Trait for parsing the magpie specific command line arguments.
+*/
 pub(super) trait MagpieParse {
     /// Extracts the DateRange.
     fn get_date_range(&self) -> DateRange;
 
     /// Extracts the ListType
     fn get_list_type(&self) -> ListType;
-
 
     /// Extracts the name of the file containing the locations, returning both the file name and the
     /// type of the locations (sub-region or hotspot.)
@@ -74,8 +73,8 @@ pub(super) trait MagpieParse {
 }
 
 /**
-  Implementation of MagpieParse for ArgMatches.
- */
+ Implementation of MagpieParse for ArgMatches.
+*/
 impl MagpieParse for ArgMatches {
     /// Extracts the DateRange.
     fn get_date_range(&self) -> DateRange {

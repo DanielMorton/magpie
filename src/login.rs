@@ -8,8 +8,8 @@ static LOGIN_URL: &str = "https://secure.birds.cornell.edu/cassso/login";
 static TOKEN: &str = r#"input[name="lt"]"#;
 
 /**
- Extracts the random token needed to log in to eBird.
- */
+Extracts the random token needed to log in to eBird.
+*/
 fn get_token(client: &Client) -> String {
     let response = client.get(LOGIN_URL).send().unwrap().text().unwrap();
     let doc = Html::parse_document(&response);
@@ -27,8 +27,8 @@ fn get_token(client: &Client) -> String {
 }
 
 /**
- Creates an eBird login session.
- */
+Creates an eBird login session.
+*/
 pub(crate) fn login() -> Client {
     let client = Client::builder().cookie_store(true).build().unwrap();
     let token = get_token(&client);

@@ -1,16 +1,16 @@
 /**
- Enumerates all possible geographic list types.
+Enumerates all possible geographic list types.
 
- If LocationLevel is Hotspot, then only Hotspot and Global are available. If ListType is Hotspot all
- species needed for that hotspot are extracted. If ListType is global, only those species not on the global
- life list are extracted.
+If LocationLevel is Hotspot, then only Hotspot and Global are available. If ListType is Hotspot all
+species needed for that hotspot are extracted. If ListType is global, only those species not on the global
+life list are extracted.
 
- If LocationLevel is SubRegion, then SubRegion, Region, Country, and Global are available ListTypes. If ListType
- is SubRegin all species need for that sub-region are extracted. If ListType is Region, then only those species
- not already on that region's life list are extracted. In similar fashion, a ListType of Country restricts
- attention to species not already aquired for the country and a ListType of Global excludes all species already
- on the global life list.
- */
+If LocationLevel is SubRegion, then SubRegion, Region, Country, and Global are available ListTypes. If ListType
+is SubRegin all species need for that sub-region are extracted. If ListType is Region, then only those species
+not already on that region's life list are extracted. In similar fashion, a ListType of Country restricts
+attention to species not already aquired for the country and a ListType of Global excludes all species already
+on the global life list.
+*/
 #[derive(Display, Debug, PartialEq)]
 pub(crate) enum ListType {
     #[strum(serialize = "hotspot_code")]
@@ -25,15 +25,15 @@ pub(crate) enum ListType {
 }
 
 /**
- Enumerates all possible temporal list types.
+Enumerates all possible temporal list types.
 
- If DateRange is Life, all species for the location not on the life lift are extracted. This is probably
- the most common use case.
+If DateRange is Life, all species for the location not on the life lift are extracted. This is probably
+the most common use case.
 
- If DateRange is YTD, all species not on the year list are extracted. If MTD, then species on the
- month list (for this all previous years) are extracted. Day extracts species not found on that calendar date,
- again covering all years.
- */
+If DateRange is YTD, all species not on the year list are extracted. If MTD, then species on the
+month list (for this all previous years) are extracted. Day extracts species not found on that calendar date,
+again covering all years.
+*/
 #[derive(Display, Debug, PartialEq)]
 pub(crate) enum DateRange {
     #[strum(serialize = "life")]
@@ -47,10 +47,10 @@ pub(crate) enum DateRange {
 }
 
 /**
- Enumerates the location levels for which data can be extracted.
- The program is provided with a list of locations, which can either be hotspots or sub-regions.
- LocationLevel tracks which type of region target species should be extracted from.
- */
+Enumerates the location levels for which data can be extracted.
+The program is provided with a list of locations, which can either be hotspots or sub-regions.
+LocationLevel tracks which type of region target species should be extracted from.
+*/
 #[derive(Display, Debug, PartialEq)]
 pub(crate) enum LocationLevel {
     #[strum(serialize = "sub_region_code")]

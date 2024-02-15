@@ -1,8 +1,8 @@
 use polars::prelude::{DataFrame, LazyCsvReader, LazyFileListReader};
 
 /**
- Loads the csv consisting of all locations for which data is to be scraped.
- */
+Loads the csv consisting of all locations for which data is to be scraped.
+*/
 pub(super) fn load_data(loc_file: &str) -> DataFrame {
     match LazyCsvReader::new(loc_file)
         .has_header(true)

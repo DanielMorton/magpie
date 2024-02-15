@@ -12,8 +12,8 @@ static SPECIES: &str = r#"div[class="SpecimenHeader"]"#;
 static SPECIES_COUNT: &str = r#"strong[class="Heading Heading--h1"]"#;
 
 /**
- Struct containing all the HTML selectors used when parsing the HTML of the scraped web pages.
- */
+Struct containing all the HTML selectors used when parsing the HTML of the scraped web pages.
+*/
 pub(super) struct Selectors {
     /// Selects HTML tag "a".
     pub(crate) a: Selector,
@@ -47,12 +47,12 @@ pub(super) struct Selectors {
 }
 
 /**
-  Implementation of the Selectors struct
- */
+ Implementation of the Selectors struct
+*/
 impl Selectors {
     /**
-     Constructs all selectors used for scraping.
-     */
+    Constructs all selectors used for scraping.
+    */
     pub(super) fn new() -> Self {
         let a = match Selector::parse(A) {
             Ok(selector) => selector,
