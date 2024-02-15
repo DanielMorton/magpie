@@ -16,34 +16,34 @@ static SPECIES_COUNT: &str = r#"strong[class="Heading Heading--h1"]"#;
  */
 pub(super) struct Selectors {
     /// Selects HTML tag "a".
-    a: Selector,
+    pub(crate) a: Selector,
 
     /// Selects the number of checklists for location and time period.
-    checklists: Selector,
+    pub(crate) checklists: Selector,
 
     /// Selects for the URL of the scraped page if location is a hotspot.
-    hotspot_select: Selector,
+    pub(crate) hotspot_select: Selector,
 
     /// Selects for all species not exotic of escapees.
-    native: Selector,
+    pub(crate) native: Selector,
 
     /// Selects the frequency of the species observations in percentage form.
-    percent: Selector,
+    pub(crate) percent: Selector,
 
     /// Selects for the URL of the scraped page if location is a region.
-    region_select: Selector,
+    pub(crate) region_select: Selector,
 
     /// Selects individual rows of the table.
-    rows: Selector,
+    pub(crate) rows: Selector,
 
     /// Selects the scientific name.
-    sci_name: Selector,
+    pub(crate) sci_name: Selector,
 
     /// Selects the species names, both common and scientific.
-    species: Selector,
+    pub(crate) species: Selector,
 
     /// Selects number of species in extracted table.
-    species_count: Selector,
+    pub(crate) species_count: Selector,
 }
 
 impl Selectors {
@@ -101,36 +101,5 @@ impl Selectors {
             species,
             species_count,
         }
-    }
-
-    pub(super) fn a(&self) -> &Selector {
-        &self.a
-    }
-    pub(super) fn checklists(&self) -> &Selector {
-        &self.checklists
-    }
-    pub(super) fn hotspot_select(&self) -> &Selector {
-        &self.hotspot_select
-    }
-    pub(super) fn native(&self) -> &Selector {
-        &self.native
-    }
-    pub(super) fn percent(&self) -> &Selector {
-        &self.percent
-    }
-    pub(super) fn region_select(&self) -> &Selector {
-        &self.region_select
-    }
-    pub(super) fn rows(&self) -> &Selector {
-        &self.rows
-    }
-    pub(super) fn sci_name(&self) -> &Selector {
-        &self.sci_name
-    }
-    pub(super) fn species(&self) -> &Selector {
-        &self.species
-    }
-    pub(super) fn species_count(&self) -> &Selector {
-        &self.species_count
     }
 }

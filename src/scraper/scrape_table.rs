@@ -19,19 +19,19 @@ pub(super) fn scrape_table(
     checklists: i32,
 ) -> DataFrame {
     let df_row = table
-        .select(selectors.rows())
+        .select(&selectors.rows)
         .map(|row| {
             let species = row
-                .select(selectors.species())
+                .select(&selectors.species)
                 .next()
-                .and_then(|s| s.select(selectors.a()).next());
+                .and_then(|s| s.select(&selectors.a).next());
             // Extracts common name of species. Returns an empty string if not present.
             let common_name = species.and_then(|s| s.text().next()).unwrap_or("").trim();
 
             // Extracts scientific name of species. Returns an empty string if not present.
             let scientific_name = species
                 .and_then(|s| {
-                    s.select(selectors.sci_name())
+                    s.select(&selectors.sci_name)
                         .next()
                         .and_then(|s| s.text().next())
                 })
@@ -40,7 +40,7 @@ pub(super) fn scrape_table(
 
             // Extracts frequency of sightings as a percentage. Returns zero if not present.
             let percent = row
-                .select(selectors.percent())
+                .select(&selectors.percent)
                 .next()
                 .and_then(|p| p.value().attr("title"))
                 .and_then(|p| p.split('%').next())

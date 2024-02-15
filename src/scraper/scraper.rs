@@ -198,9 +198,9 @@ impl Scraper {
         let date_query = Arc::new(vec![("t2", self.date_range.to_string())]);
         let selectors = Arc::new(Selectors::new());
         let (doc_selector, doc_format) = if self.location_level == LocationLevel::Hotspot {
-            (selectors.hotspot_select(), HOTSPOT)
+            (&selectors.hotspot_select, HOTSPOT)
         } else {
-            (selectors.region_select(), REGION)
+            (&selectors.region_select, REGION)
         };
         let loc_query = self.make_loc_payload();
         let loc_vec = self.make_loc_vec();
