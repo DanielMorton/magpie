@@ -64,7 +64,7 @@ impl MagpieParse for ArgMatches {
         } else if self.get_flag("ytd") {
             DateRange::YTD
         } else if self.get_flag("mtd") {
-            DateRange::MTD
+            DateRange::Month
         } else if self.get_flag("day ") {
             DateRange::Day
         } else {

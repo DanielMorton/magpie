@@ -53,5 +53,8 @@ pub(super) fn scrape_table(
         df_row.iter().map(|r| r.percent).collect::<Vec<_>>(),
     );
     let checklist_column = Series::new(CHECKLISTS, vec![checklists; df_row.len()]);
-    DataFrame::new(vec![common_name, scietific_name, percent, checklist_column]).unwrap()
+    match DataFrame::new(vec![common_name, scietific_name, percent, checklist_column]) {
+        Ok(df) => df,
+        Err(e) => panic!("{}", e)
+    }
 }
