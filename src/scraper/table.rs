@@ -7,6 +7,10 @@ use polars::frame::DataFrame;
 use polars::prelude::NamedFrom;
 use polars::series::Series;
 
+/**
+ Adds columns that are constant for each scraped page. These columns are the location information:
+ sub-region, region, country, hotspot (if applicable), and the start and end months.
+ */
 pub(super) fn add_columns(df: &mut DataFrame, row: &LocationRow, time: &[(String, u8)]) {
     let size = df.shape().0;
     match df.with_column(Series::new(SUB_REGION, vec![row.sub_region(); size])) {
@@ -37,6 +41,9 @@ pub(super) fn add_columns(df: &mut DataFrame, row: &LocationRow, time: &[(String
     };
 }
 
+/**
+ In cases where there is no data to return, returns an empty table.
+ */
 pub(super) fn empty_table() -> DataFrame {
     let common_name = Series::new(COMMON_NAME, Vec::<String>::new());
     let scietific_name = Series::new(SCIENTIFIC_NAME, Vec::<String>::new());

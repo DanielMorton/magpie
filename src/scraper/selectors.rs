@@ -46,7 +46,13 @@ pub(super) struct Selectors {
     pub(crate) species_count: Selector,
 }
 
+/**
+  Implementation of the Selectors struct
+ */
 impl Selectors {
+    /**
+     Constructs all selectors used for scraping.
+     */
     pub(super) fn new() -> Self {
         let a = match Selector::parse(A) {
             Ok(selector) => selector,
