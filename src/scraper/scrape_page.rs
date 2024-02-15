@@ -1,22 +1,15 @@
-use crate::scraper::row::LocationRow;
-use crate::scraper::scrape_params::LocationLevel;
 use crate::scraper::scrape_table::scrape_table;
 use crate::scraper::scraper::Scraper;
 use crate::scraper::selectors::Selectors;
-use crate::scraper::table::{add_columns, empty_table};
-use crate::scraper::utils::print_hms;
-use crate::scraper::{HOTSPOT, MAX_BACKOFF, MIN_BACKOFF, REGION};
-use indicatif::{ParallelProgressIterator, ProgressStyle};
-use itertools::Itertools;
-use polars::functions::concat_df_diagonal;
+use crate::scraper::table::empty_table;
+use crate::scraper::MAX_BACKOFF;
 use polars::prelude::DataFrame;
-use rayon::prelude::*;
 use scraper::{Html, Selector};
 use std::cmp::min;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 /**
 Scrapes species frequency data from a single page. Checks if correct URL is returned.
@@ -24,7 +17,7 @@ If the incorrect page is returned, retries after a delay. Delay time doubles aft
 Only returns data about native and naturalized species, exotics and escapees are discarded.
 If no data for location and time parameters, returns an empty table.
 */
-fn scrape_page(
+pub(super) fn scrape_page(
     scraper: &Arc<Scraper>,
     selectors: &Arc<Selectors>,
     doc_selector: &Selector,
@@ -113,53 +106,5 @@ fn scrape_page(
                 min(2 * sleep, MAX_BACKOFF),
             )
         }
-    }
-}
-
-pub fn scrape_pages(scraper: Scraper) -> DataFrame {
-    let date_query = Arc::new(vec![("t2", scraper.date_range.to_string())]);
-    let selectors = Arc::new(Selectors::new());
-    let (doc_selector, doc_format) = if scraper.location_level == LocationLevel::Hotspot {
-        (selectors.hotspot_select(), HOTSPOT)
-    } else {
-        (selectors.region_select(), REGION)
-    };
-    let loc_query = scraper.make_loc_payload();
-    let loc_vec = scraper.make_loc_vec();
-    let time_query = scraper.make_time_payload();
-    let arc_scraper = Arc::new(scraper);
-    let loc_payload = loc_vec
-        .into_iter()
-        .zip(loc_query)
-        .collect::<Vec<(LocationRow, Vec<(String, String)>)>>();
-    let payloads = loc_payload
-        .into_iter()
-        .cartesian_product(time_query)
-        .collect::<Vec<_>>();
-    let s = Instant::now();
-    let style = ProgressStyle::with_template("{bar:100} {pos:>7}/{len:7} [{elapsed}] [{eta}]").unwrap();
-    let output_list = payloads
-        .into_par_iter()
-        .progress_with_style(style)
-        .map(|((row, loc), time)| {
-            let mut df = scrape_page(
-                &arc_scraper,
-                &selectors,
-                doc_selector,
-                loc,
-                &time,
-                &date_query,
-                doc_format,
-                MIN_BACKOFF,
-            );
-            add_columns(&mut df, &row, &time);
-            df
-        })
-        .collect::<Vec<_>>();
-
-    print_hms(&s);
-    match concat_df_diagonal(&output_list) {
-        Ok(df) => df,
-        Err(e) => panic!("{}", e),
     }
 }

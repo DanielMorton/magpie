@@ -7,7 +7,6 @@ mod selectors;
 mod table;
 mod utils;
 
-pub use scrape_page::scrape_pages;
 pub use scraper::Scraper;
 
 static BASE_URL: &str = "https://ebird.org/targets";

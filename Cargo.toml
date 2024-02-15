@@ -12,7 +12,10 @@ rpassword = "7.2"
 scraper = "0.17.1"
 strum = "*"
 strum_macros = "0.25.3"
-indicatif = {version = "0.17.7", features = ["rayon"]}
+
+[dependencies.indicatif]
+version = "0.17.7"
+features = ["rayon"]
 
 [dependencies.polars]
 version = "0.34.2"

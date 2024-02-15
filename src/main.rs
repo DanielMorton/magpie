@@ -8,7 +8,6 @@ extern crate strum;
 extern crate strum_macros;
 
 use crate::loc::load_data;
-use crate::scraper::scrape_pages;
 use parse::MagpieParse;
 use polars::io::prelude::*;
 use polars::prelude::CsvWriter;
@@ -30,7 +29,7 @@ fn main() {
     let scraper = Scraper::new(
         client, date_range, list_level, list_type, loc_df, time_range,
     );
-    let mut output = scrape_pages(scraper);
+    let mut output = scraper.scrape_pages();
     let file = match File::create(output_file) {
         Ok(f) => f,
         Err(e) => panic!("{}", e),

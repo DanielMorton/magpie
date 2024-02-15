@@ -1,12 +1,22 @@
 use crate::scraper::row::LocationRow;
+use crate::scraper::scrape_page::scrape_page;
 use crate::scraper::scrape_params::{DateRange, ListType, LocationLevel};
-use crate::scraper::utils::remove_quote;
-use crate::scraper::{BASE_URL, HOME_URL, HOTSPOT_COLUMNS, LOGIN_URL, REGION_COLUMNS};
+use crate::scraper::selectors::Selectors;
+use crate::scraper::table::add_columns;
+use crate::scraper::utils::{print_hms, remove_quote};
+use crate::scraper::{
+    BASE_URL, HOME_URL, HOTSPOT, HOTSPOT_COLUMNS, LOGIN_URL, MIN_BACKOFF, REGION, REGION_COLUMNS,
+};
+use indicatif::{ParallelProgressIterator, ProgressStyle};
+use itertools::Itertools;
+use polars::functions::concat_df_diagonal;
 use polars::prelude::DataFrame;
+use rayon::prelude::*;
 use reqwest::blocking::{Client, Response};
 use std::ops::Deref;
+use std::sync::Arc;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 /**
 Struct containing Client and all data needed for scraping a set of pages. The client performs the
@@ -69,7 +79,7 @@ impl Scraper {
 
     /// Make vector of all locations consisting of all country, region, sub-region, and (if applicable)
     /// hotspot combinations.
-    pub(super) fn make_loc_vec(&self) -> Vec<LocationRow> {
+    fn make_loc_vec(&self) -> Vec<LocationRow> {
         let loc_vec = if self.location_level == LocationLevel::Hotspot {
             HOTSPOT_COLUMNS
         } else {
@@ -87,7 +97,7 @@ impl Scraper {
             .collect::<Vec<LocationRow>>()
     }
 
-    pub(super) fn make_loc_payload(&self) -> Vec<Vec<(String, String)>> {
+    fn make_loc_payload(&self) -> Vec<Vec<(String, String)>> {
         let location_level_code = self.location_level.to_code();
         let columns = if self.list_type == ListType::Global {
             vec![location_level_code]
@@ -123,7 +133,7 @@ impl Scraper {
         loc_payload
     }
 
-    pub(super) fn make_time_payload(&self) -> Vec<Vec<(String, u8)>> {
+    fn make_time_payload(&self) -> Vec<Vec<(String, u8)>> {
         self.time_range
             .iter()
             .map(|&(s, e)| vec![("bmo".to_string(), s), ("emo".to_string(), e)])
@@ -158,6 +168,55 @@ impl Scraper {
                 thread::sleep(Duration::from_secs(sleep));
                 self.get_response(loc, time, date_query, 2 * sleep)
             }
+        }
+    }
+
+    pub fn scrape_pages(self) -> DataFrame {
+        let date_query = Arc::new(vec![("t2", self.date_range.to_string())]);
+        let selectors = Arc::new(Selectors::new());
+        let (doc_selector, doc_format) = if self.location_level == LocationLevel::Hotspot {
+            (selectors.hotspot_select(), HOTSPOT)
+        } else {
+            (selectors.region_select(), REGION)
+        };
+        let loc_query = self.make_loc_payload();
+        let loc_vec = self.make_loc_vec();
+        let time_query = self.make_time_payload();
+        let arc_scraper = Arc::new(self);
+        let loc_payload = loc_vec
+            .into_iter()
+            .zip(loc_query)
+            .collect::<Vec<(LocationRow, Vec<(String, String)>)>>();
+        let payloads = loc_payload
+            .into_iter()
+            .cartesian_product(time_query)
+            .collect::<Vec<_>>();
+        let s = Instant::now();
+        let style =
+            ProgressStyle::with_template("{bar:100} {pos:>7}/{len:7} [{elapsed}] [{eta}]").unwrap();
+        let output_list = payloads
+            .into_par_iter()
+            .progress_with_style(style)
+            .map(|((row, loc), time)| {
+                let mut df = scrape_page(
+                    &arc_scraper,
+                    &selectors,
+                    doc_selector,
+                    loc,
+                    &time,
+                    &date_query,
+                    doc_format,
+                    MIN_BACKOFF,
+                );
+                add_columns(&mut df, &row, &time);
+                df
+            })
+            .collect::<Vec<_>>();
+
+        print_hms(&s);
+        match concat_df_diagonal(&output_list) {
+            Ok(df) => df,
+            Err(e) => panic!("{}", e),
         }
     }
 }
