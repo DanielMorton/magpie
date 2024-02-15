@@ -13,7 +13,6 @@ use polars::functions::concat_df_diagonal;
 use polars::prelude::DataFrame;
 use rayon::prelude::*;
 use reqwest::blocking::{Client, Response};
-use std::ops::Deref;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -46,7 +45,7 @@ pub struct Scraper {
     /// Type of location, hotspot or sub-region, for which target species are extracted.
     pub(super) location_level: LocationLevel,
 
-    /// Typee of list for which target species are extracted.
+    /// Type of list for which target species are extracted.
     list_type: ListType,
 
     /// DataFrame of locations for which data is extracted.
@@ -77,8 +76,9 @@ impl Scraper {
         }
     }
 
-    /// Make vector of all locations consisting of all country, region, sub-region, and (if applicable)
-    /// hotspot combinations.
+    /** Makes vector of all locations consisting of all country, region, sub-region, and (if applicable)
+     hotspot combinations.
+    */
     fn make_loc_vec(&self) -> Vec<LocationRow> {
         let loc_vec = if self.location_level == LocationLevel::Hotspot {
             HOTSPOT_COLUMNS
@@ -97,6 +97,15 @@ impl Scraper {
             .collect::<Vec<LocationRow>>()
     }
 
+    /**
+      Makes all the location payloads for the get requests. Each payload consists two locations, the
+      location of the site for which target species are extracted (encoded as r1) and the region of
+      the species list from which targets are excluded (encoded as r2). These regions may either be
+      the same or r2 can be larger region containing r1. If r1 is a hotspot, r2 must either equal r1
+      or be the whole world.
+
+      Each payload is encoded as a vector and the payloads are stored in a vector.
+     */
     fn make_loc_payload(&self) -> Vec<Vec<(String, String)>> {
         let location_level_code = self.location_level.to_string();
         let columns = if self.list_type == ListType::Global {
@@ -133,6 +142,11 @@ impl Scraper {
         loc_payload
     }
 
+    /**
+     Makes all temporal payloads. These consist of a start month (bmo) and an end month (emo) which may
+     be equal. If a month range, or a full year is specified, the output will be a single payload. If all
+     months are to be extracted, the output will be a vector of length 12.
+     */
     fn make_time_payload(&self) -> Vec<Vec<(String, u8)>> {
         self.time_range
             .iter()
@@ -140,6 +154,11 @@ impl Scraper {
             .collect::<Vec<Vec<(String, u8)>>>()
     }
 
+    /**
+     Makes the get request for a single payload. Combines location payload, time payload, and the
+     DateType for a single target species extraction query. If there is an error or the wrong URL
+     is returned, retries the request after short interval. This interval is doubled for each retry.
+     */
     pub(super) fn get_response(
         &self,
         loc: &Vec<(String, String)>,
@@ -152,7 +171,7 @@ impl Scraper {
             .get(BASE_URL)
             .query(loc)
             .query(time)
-            .query(date_query.deref())
+            .query(date_query)
             .send()
         {
             Ok(response) => {
@@ -171,6 +190,10 @@ impl Scraper {
         }
     }
 
+    /**
+     Constructs all payloads and scrapes all pages for locations in loc_df. Uses all available cores
+     to scrape multiple sites at one time. Returns all output concatenated as a single polars DataFrame.
+     */
     pub fn scrape_pages(self) -> DataFrame {
         let date_query = Arc::new(vec![("t2", self.date_range.to_string())]);
         let selectors = Arc::new(Selectors::new());

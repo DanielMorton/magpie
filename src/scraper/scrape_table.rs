@@ -6,6 +6,13 @@ use scraper::ElementRef;
 use std::str::FromStr;
 use std::sync::Arc;
 
+/**
+ Extracts species data from the table of all target species for a given location.
+ Returns common name (if present), scientific name (if present), and the frequency of sightings as
+ a floating point number. In rare cases, percentage can be greater than 100.
+ The three features and the number of checklists for the location in the relevant time interval are
+ returned in the form of a DataFrame.
+ */
 pub(super) fn scrape_table(
     selectors: &Arc<Selectors>,
     table: ElementRef,
@@ -18,7 +25,10 @@ pub(super) fn scrape_table(
                 .select(selectors.species())
                 .next()
                 .and_then(|s| s.select(selectors.a()).next());
+            // Extracts common name of species. Returns an empty string if not present.
             let common_name = species.and_then(|s| s.text().next()).unwrap_or("").trim();
+
+            // Extracts scientific name of species. Returns an empty string if not present.
             let scientific_name = species
                 .and_then(|s| {
                     s.select(selectors.sci_name())
@@ -27,6 +37,8 @@ pub(super) fn scrape_table(
                 })
                 .unwrap_or("")
                 .trim();
+
+            // Extracts frequency of sightings as a percentage. Returns zero if not present.
             let percent = row
                 .select(selectors.percent())
                 .next()

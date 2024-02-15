@@ -31,7 +31,7 @@ pub(super) fn add_columns(df: &mut DataFrame, row: &LocationRow, time: &[(String
         Ok(_) => (),
         Err(e) => panic!("{}", e)
     };
-    match df.with_column(Series::new(END_MONTH, vec![time[1].1 as u32; size])){
+    match df.with_column(Series::new(END_MONTH, vec![time[1].1 as u32; size])) {
         Ok(_) => (),
         Err(e) => panic!("{}", e)
     };
@@ -41,5 +41,8 @@ pub(super) fn empty_table() -> DataFrame {
     let common_name = Series::new(COMMON_NAME, Vec::<String>::new());
     let scietific_name = Series::new(SCIENTIFIC_NAME, Vec::<String>::new());
     let percent = Series::new(PERCENT, Vec::<f32>::new());
-    DataFrame::new(vec![common_name, scietific_name, percent]).unwrap()
+    match DataFrame::new(vec![common_name, scietific_name, percent]) {
+        Ok(df) => df,
+        Err(e) => panic!("{}", e)
+    }
 }

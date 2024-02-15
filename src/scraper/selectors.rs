@@ -6,21 +6,43 @@ static HOTSPOT_SELECT: &str = r#"a[href^="hotspot"]"#;
 static NATIVE: &str = r#"section[aria-labelledby="native-and-naturalized"]"#;
 static PERCENT: &str = r#"div[class="ResultsStats-stats"]"#;
 static REGION_SELECT: &str = r#"a[href^="region"]"#;
-static ROW: &str = r#"li[class="ResultsStats ResultsStats--action ResultsStats--toEdge"]"#;
+static ROWS: &str = r#"li[class="ResultsStats ResultsStats--action ResultsStats--toEdge"]"#;
 static SCI_NAME: &str = r#"em[class="sci"]"#;
 static SPECIES: &str = r#"div[class="SpecimenHeader"]"#;
 static SPECIES_COUNT: &str = r#"strong[class="Heading Heading--h1"]"#;
 
+/**
+ Struct containing all the HTML selectors used when parsing the HTML of the scraped web pages.
+ */
 pub(super) struct Selectors {
+    /// Selects HTML tag "a".
     a: Selector,
+
+    /// Selects the number of checklists for location and time period.
     checklists: Selector,
+
+    /// Selects for the URL of the scraped page if location is a hotspot.
     hotspot_select: Selector,
+
+    /// Selects for all species not exotic of escapees.
     native: Selector,
+
+    /// Selects the frequency of the species observations in percentage form.
     percent: Selector,
+
+    /// Selects for the URL of the scraped page if location is a region.
     region_select: Selector,
+
+    /// Selects individual rows of the table.
     rows: Selector,
+
+    /// Selects the scientific name.
     sci_name: Selector,
+
+    /// Selects the species names, both common and scientific.
     species: Selector,
+
+    /// Selects number of species in extracted table.
     species_count: Selector,
 }
 
@@ -51,7 +73,7 @@ impl Selectors {
             Ok(selector) => selector,
             Err(e) => panic!("{}", e),
         };
-        let rows = match Selector::parse(ROW) {
+        let rows = match Selector::parse(ROWS) {
             Ok(selector) => selector,
             Err(e) => panic!("{}", e),
         };
