@@ -58,9 +58,28 @@ are taken to be the whole country.
 Since all regions and sub-regions have been provided, it is recommended
 that users select the subset of locations of interest from this file.
 
+Magpie only scrapes target species for subregions and hotspots. The
+rationale for this is that target species for coarser regions are not
+likely to be useful most applications (i.e. chasing birds.)
+
 ## Inputs
 
 Magpie takes as inputs a CSV file consisting of all the locations
 for which target species should be extracted. This file should either
-have the structure of `regions.csv` or 
+have the structure of `regions.csv` or `hotspots.csv`, depending on
+what type location is being scraped. Ideally, the input should
+be a subset of onne of those files. Since `regions.csv` contains all
+geographic regions and subregions, any collections of subregions will
+be a subset.
+
+It is not the case that `hotspots.csv` contains all the hotspots, but
+it does contain all of the most important ones. It was easy to scrape
+the top 100 most productive hotspots for each subregion from eBird. In
+subregions with less than 100 hotspots this list contains every hotspot.
+In subregions with more than 100, the remaining hotspots will have
+fewer species and, as a rule, will be clustered around the major hotspots.
+From this list about 9000 hotspots with malformed web pages were excluded.
+These hotspots are almost all defunct, private roads that are difficult to
+access, or stakeouts for rarities that left long ago and thus have little
+current relevance.
 
