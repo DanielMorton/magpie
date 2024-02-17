@@ -12,7 +12,7 @@ exclude = [
 ]
 
 [dependencies]
-clap = "*"
+clap = "4.4.11"
 itertools = "0.11.0"
 num_cpus = "1.16.0"
 rayon = "1.8.0"
@@ -28,7 +28,6 @@ features = ["rayon"]
 [dependencies.polars]
 version = "0.34.2"
 features = ["diagonal_concat", "lazy", "temporal"]
-
 
 [dependencies.reqwest]
 version = "0.11"
