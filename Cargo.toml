@@ -1,7 +1,15 @@
 [package]
 name = "magpie"
 version = "0.1.0"
+authors = ["DanielMorton <dacmorton@gmail.com>"]
+description = "eBird Target Bird Scraper"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/DanielMorton/magpie"
 edition = "2021"
+exclude = [
+    ".idea/*",
+    "magpie.iml"
+]
 
 [dependencies]
 clap = "*"
