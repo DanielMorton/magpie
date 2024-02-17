@@ -46,9 +46,10 @@ pub(super) fn parse() -> ArgMatches {
         )
         .arg(arg!(--hotspot <HOTSPOT>))
         .arg(arg!(--subregion <SUBREGION>))
-        .group(ArgGroup::new("list-type")
-            .args(["hotspot", "subregion"])
-            .required(true)
+        .group(
+            ArgGroup::new("list-type")
+                .args(["hotspot", "subregion"])
+                .required(true),
         )
         .arg(arg!(--output <OUTPUT>).required(true))
         .get_matches()

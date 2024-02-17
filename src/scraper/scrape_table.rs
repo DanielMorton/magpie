@@ -7,8 +7,8 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 /**
- Extracts common name for species in row.
- */
+Extracts common name for species in row.
+*/
 fn get_common_name(species: &Option<ElementRef>) -> String {
     species
         .and_then(|s| s.text().next())
@@ -18,8 +18,8 @@ fn get_common_name(species: &Option<ElementRef>) -> String {
 }
 
 /**
- Extracts scientific name for species in row.
- */
+Extracts scientific name for species in row.
+*/
 fn get_scientific_name(species: &Option<ElementRef>, selectors: &Arc<Selectors>) -> String {
     species
         .and_then(|s| {
@@ -33,8 +33,8 @@ fn get_scientific_name(species: &Option<ElementRef>, selectors: &Arc<Selectors>)
 }
 
 /**
- Extracts common name and scientific name for species in row.
- */
+Extracts common name and scientific name for species in row.
+*/
 fn get_species(row: &ElementRef, selectors: &Arc<Selectors>) -> (String, String) {
     let species = row
         .select(&selectors.species)
@@ -47,9 +47,9 @@ fn get_species(row: &ElementRef, selectors: &Arc<Selectors>) -> (String, String)
 }
 
 /**
- Extracts the frequency of sightings as a percentage for species in row. Returns zero if
- no percentage provided.
- */
+Extracts the frequency of sightings as a percentage for species in row. Returns zero if
+no percentage provided.
+*/
 fn get_percent(row: &ElementRef, selectors: &Arc<Selectors>) -> f32 {
     row.select(&selectors.percent)
         .next()
