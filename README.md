@@ -142,3 +142,26 @@ The command line must include the name of on output file
 --output <OUTPUT>
 ```
 
+#### Sample Input command
+
+```agsl
+cargo run --release -- --hotspot hotspot_no.csv --life --year --global --output output_hotspot_no.csv
+```
+
+### Output
+
+The output file is a csv consisting of nine or ten columns depending on whether
+data was collect on the ssubregion or the hotspot level. A sample output is below.
+
+| common name           | scientific name        | percent  | checklists | sub_region | region  | country           | hotspot    | start month | end month |
+|-----------------------|------------------------|----------|-----------|----------|--------------------------|-------------------|------------|--------|-----------|
+| Meadow Pipit          | Anthus pratensis       | 41.97573 | 618       | Rogaland | Rogaland | Norway | Utsira     | 1      | 12        |
+| Common Chiffchaff     | Phylloscopus collybita | 37.59061 | 618       | Rogaland | Rogaland | Norway | Utsira     | 1      | 12        |
+| Eurasian Blackcap     | Sylvia atricapilla     | 34.03074 | 618| Rogaland| Rogaland| Norway            | Utsira     | 1| 12        |
+| Goldcrest             | Regulus regulus        | 31.60841 | 618| Rogaland| Rogaland| Norway            | Utsira| 1| 12        |
+| Redwing               | Turdus iliacus         | 29.83495 | 618| Rogaland| Rogaland| Norway            | Utsira| 1| 12        |
+| European Shag         | Gulosus aristotelis    | 28.20388 | 618| Rogaland| Rogaland| Norway            | Utsira| 1| 12        |
+| Northern Wheatear     | Oenanthe oenanthe      | 26.89806 | 618| Rogaland| Rogaland| Norway            | Utsira| 1| 12        |
+| Rock Pipit            | Anthus petrosus        | 23.02751 | 618| Rogaland| Rogaland| Norway| Utsira     | 1      | 12        |
+| Yellow-browed Warbler | Phylloscopus inornatus | 21.07929 | 618| Rogaland| Rogaland| Norway| Utsira     | 1      | 12        |
+| Common Snipe          | Gallinago gallinago    | 20.27023 | 618| Rogaland| Rogaland| Norway| Utsira     | 1      | 12        |
