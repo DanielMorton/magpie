@@ -1,5 +1,5 @@
 [package]
-name = "magpie"
+name = "magpie-bird"
 version = "0.1.0"
 authors = ["DanielMorton <dacmorton@gmail.com>"]
 description = "eBird Target Bird Scraper"
