@@ -18,7 +18,7 @@ num_cpus = "1.16.0"
 rayon = "1.8.0"
 rpassword = "7.2"
 scraper = "0.17.1"
-strum = "*"
+strum = "0.25.0"
 strum_macros = "0.25.3"
 
 [dependencies.indicatif]
