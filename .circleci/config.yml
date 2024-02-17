@@ -1,0 +1,8 @@
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: circleci/rust:1.76
+    steps:
+      - checkout
+      - run: cargo build
