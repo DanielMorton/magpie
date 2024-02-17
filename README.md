@@ -6,7 +6,7 @@ Magpie is a tool for scraping target bird species from eBird. Any hotspot
 or geographic region has a "Target Species" feature. This feature all the
 species found at that location that the user has not already seen in some
 specified time period and geographic range. The most general form would
-be
+be:
 
 ```{NUMBER} of species in {FIRST_LOCATION} that you need for your {SECOND_LOCATION} {TIME} list```
 
@@ -17,9 +17,9 @@ life list or year list) but can be month (current month, all years) or day
 
 Two concrete examples are below:
 
-#### 180 species observed in Sogn og Fjordane, NO that you need for your Sogn og Fjordane Life List
+#### 180 species observed in Sogn og Fjordane, NO that you need for your Sogn og Fjordane Life List.
 
-#### 130 species observed in Sogn og Fjordane, NO that you need for your World Life List
+#### 130 species observed in Sogn og Fjordane, NO that you need for your World Life List.
 
 Note that, in this example, when `SECOND_LOCATION` covers a larger geographic area, the
 number of target species goes down. In other examples it might stay the
@@ -102,7 +102,7 @@ The command line prompt must contain exactly one of these.
 |-----------|----------------------------------------------------------------------------------------------|
 | --local   | Target species are those not already seen in the subregion or hotpsot list.                  |
 | --region  | Target species are those not already seen in the region containing the subregion or hotspot. |
-| --country | Target species are those not already seen in the country containing the subregion or hotspot |
+| --country | Target species are those not already seen in the country containing the subregion or hotspot. |
 | --global  | Target speciess are those not already seen anywhere.                                         |
 
 
