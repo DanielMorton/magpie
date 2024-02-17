@@ -1,4 +1,6 @@
-## Magpie
+[![minimum rustc 1.76](https://img.shields.io/badge/rustc-1.76+-blue.svg)](https://rust-lang.github.io/rfcs/2495-min-rust-version.html)
+
+# Magpie
 Magpie is a tool for scraping target bird species from eBird. Any hotspot
 or geographic region has a "Target Species" feature. This feature all the
 species found at that location that the user has not already seen in some
