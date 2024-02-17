@@ -23,11 +23,11 @@ pub(super) fn parse() -> ArgMatches {
         )
         .arg(arg!(--life))
         .arg(arg!(--ytd))
-        .arg(arg!(--mtd))
-        .arg(arg!(--day))
+        .arg(arg!(--current_month))
+        .arg(arg!(--date))
         .group(
             ArgGroup::new("date_range")
-                .args(["life", "ytd", "mtd", "day"])
+                .args(["life", "ytd", "current_month", "date"])
                 .required(true),
         )
         .arg(arg!(--year))
@@ -44,10 +44,13 @@ pub(super) fn parse() -> ArgMatches {
                 .args(["year", "month", "all", "range"])
                 .required(true),
         )
-        .arg(arg!(--hotspot[HOTSPOT]))
-        .arg(arg!(--geo[GEO]))
-        .group(ArgGroup::new("csv_range").args(["hotspot", "region"]))
-        .arg(arg!(--output <OUTPUT>))
+        .arg(arg!(--hotspot <HOTSPOT>))
+        .arg(arg!(--subregion <SUBREGION>))
+        .group(ArgGroup::new("list-type")
+            .args(["hotspot", "subregion"])
+            .required(true)
+        )
+        .arg(arg!(--output <OUTPUT>).required(true))
         .get_matches()
 }
 
@@ -81,11 +84,11 @@ impl MagpieParse for ArgMatches {
         if self.get_flag("life") {
             DateRange::Life
         } else if self.get_flag("ytd") {
-            DateRange::YTD
-        } else if self.get_flag("mtd") {
+            DateRange::Year
+        } else if self.get_flag("current_month") {
             DateRange::Month
-        } else if self.get_flag("day ") {
-            DateRange::Day
+        } else if self.get_flag("date") {
+            DateRange::Date
         } else {
             panic!("Invalid Date Range.")
         }
@@ -105,7 +108,7 @@ impl MagpieParse for ArgMatches {
             }
             None => (),
         };
-        match self.get_one::<String>("geo") {
+        match self.get_one::<String>("subregion") {
             Some(_) => {
                 if self.get_flag("local") {
                     ListType::SubRegion
@@ -128,7 +131,7 @@ impl MagpieParse for ArgMatches {
     fn get_loc_data(&self) -> (&str, LocationLevel) {
         match self.get_one::<String>("hotspot") {
             Some(f) => (f, Hotspot),
-            None => match self.get_one::<String>("geo") {
+            None => match self.get_one::<String>("subregion") {
                 Some(f) => (f, SubRegion),
                 None => (DEFAULT_LOCATION, SubRegion),
             },

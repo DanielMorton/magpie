@@ -64,6 +64,8 @@ likely to be useful most applications (i.e. chasing birds.)
 
 ## Inputs
 
+### Input Files
+
 Magpie takes as inputs a CSV file consisting of all the locations
 for which target species should be extracted. This file should either
 have the structure of `regions.csv` or `hotspots.csv`, depending on
@@ -81,5 +83,62 @@ fewer species and, as a rule, will be clustered around the major hotspots.
 From this list about 9000 hotspots with malformed web pages were excluded.
 These hotspots are almost all defunct, private roads that are difficult to
 access, or stakeouts for rarities that left long ago and thus have little
-current relevance.
+current relevance. Users can add hotspots that are not on this list, but
+there is no guarantee that magpie will parse the data properly.
+
+### Input Parameters.
+
+The combination of List Level and Date Range parameters tells `magpie`
+what type of species list to use for getting targets.
+
+#### List Level Parameter
+
+The command line prompt must contain exactly one of these.
+
+| Parameter | Definition                                                                                   |
+|-----------|----------------------------------------------------------------------------------------------|
+| --local   | Target species are those not already seen in the subregion or hotpsot list.                  |
+| --region  | Target species are those not already seen in the region containing the subregion or hotspot. |
+| --country | Target species are those not already seen in the country containing the subregion or hotspot |
+| --global  | Target speciess are those not already seen anywhere.                                         |
+
+
+#### Date Range Parameter
+
+The command line prompt must contain exactly one of these.
+
+| Parameter       | Definition                                                            |
+|-----------------|-----------------------------------------------------------------------|
+| --life          | Target species are those not on the life list                         |
+| --ytd           | Target species are those not on the year list.                        |
+| --current_month | Target species are those not seen in the current month for all years. |
+| --date          | Target species are thosse not seen on the current date for all years. |
+
+#### Time Range Parameter
+
+The command line prompt must contain exactly one of these.
+
+| Parameter | Definition                                                                    |
+|-----------|-------------------------------------------------------------------------------|
+| --year    | Target species are taken from those found at the location any time of year.   |
+| --month <month> | Target species are taken from those found at the location in the given month. |
+|--all | A separate list of target species is made for each month.|
+|--range <RANGE>| Target species are taken from those found in the given range of months. Start and end months are separated with a dash.|
+
+#### List Type Parmeter
+
+The command line prompt must contain exactly one of these.
+
+| Parameter           | Definition                     |
+|---------------------|--------------------------------|
+| --hotspot <HOTSPOT> | Input is a list of hotspots.   |
+| --subregion <SUBREGION> | Input is a list of subregions. |
+
+#### Output Parameter
+
+The command line must include the name of on output file
+
+```
+--output <OUTPUT>
+```
 

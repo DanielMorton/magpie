@@ -39,11 +39,11 @@ pub(crate) enum DateRange {
     #[strum(serialize = "life")]
     Life,
     #[strum(serialize = "year")]
-    YTD,
+    Year,
     #[strum(serialize = "month")]
     Month,
     #[strum(serialize = "day")]
-    Day,
+    Date,
 }
 
 /**
