@@ -34,7 +34,7 @@ fn main() {
         Ok(f) => f,
         Err(e) => panic!("{}", e),
     };
-    match CsvWriter::new(&file).has_header(true).finish(&mut output) {
+    match CsvWriter::new(&file).include_header(true).finish(&mut output) {
         Ok(_) => (),
         Err(e) => panic!("{}", e),
     }
