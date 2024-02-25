@@ -1,5 +1,4 @@
 pub mod row;
-mod scrape_page;
 pub mod scrape_params;
 mod scrape_table;
 mod scraper;
