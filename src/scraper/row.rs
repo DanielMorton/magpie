@@ -31,7 +31,7 @@ pub struct LocationRow {
 /// Implementation of LocationRow.
 impl LocationRow {
     /// Creates LocationRow from a vector of data extracted from a DataFrame row.
-    pub(crate) fn new(loc: &mut Vec<SeriesIter>) -> Self {
+    pub(crate) fn new(loc: &mut [SeriesIter]) -> Self {
         if loc.len() == 3 {
             LocationRow::new_location(
                 remove_quote(&loc[0].next().unwrap().to_string()),
