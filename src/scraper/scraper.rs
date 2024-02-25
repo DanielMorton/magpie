@@ -249,7 +249,7 @@ impl Scraper {
     Only returns data about native and naturalized species, exotics and escapees are discarded.
     If no data for location and time parameters, returns an empty table.
      */
-    pub(super) fn scrape_page(self,
+    pub(super) fn scrape_page(&self,
         selectors: &Arc<Selectors>,
         doc_selector: &Selector,
         loc: Vec<(String, String)>,
