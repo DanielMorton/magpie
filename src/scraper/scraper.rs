@@ -1,22 +1,25 @@
-use std::cmp::min;
-use std::str::FromStr;
 use crate::scraper::row::LocationRow;
 use crate::scraper::scrape_params::{DateRange, ListType, LocationLevel};
+use crate::scraper::scrape_table::scrape_table;
 use crate::scraper::selectors::Selectors;
 use crate::scraper::table::{add_columns, empty_table};
 use crate::scraper::utils::{print_hms, remove_quote};
-use crate::scraper::{BASE_URL, HOME_URL, HOTSPOT, HOTSPOT_COLUMNS, LOGIN_URL, MAX_BACKOFF, MIN_BACKOFF, REGION, REGION_COLUMNS};
+use crate::scraper::{
+    BASE_URL, HOME_URL, HOTSPOT, HOTSPOT_COLUMNS, LOGIN_URL, MAX_BACKOFF, MIN_BACKOFF, REGION,
+    REGION_COLUMNS,
+};
 use indicatif::{ParallelProgressIterator, ProgressStyle};
 use itertools::Itertools;
 use polars::functions::concat_df_diagonal;
 use polars::prelude::DataFrame;
 use rayon::prelude::*;
 use reqwest::blocking::{Client, Response};
+use scraper::{Html, Selector};
+use std::cmp::min;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
-use scraper::{Html, Selector};
-use crate::scraper::scrape_table::scrape_table;
 
 /**
 Struct containing Client and all data needed for scraping a set of pages. The client performs the
@@ -249,7 +252,8 @@ impl Scraper {
     Only returns data about native and naturalized species, exotics and escapees are discarded.
     If no data for location and time parameters, returns an empty table.
      */
-    pub(super) fn scrape_page(&self,
+    pub(super) fn scrape_page(
+        &self,
         selectors: &Arc<Selectors>,
         doc_selector: &Selector,
         loc: Vec<(String, String)>,
