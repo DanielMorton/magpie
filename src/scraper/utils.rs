@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 /// Removes first and last char from a string. Used when quotes are inproperly included in strings.
-pub fn remove_quote(value: &str) -> String {
+pub(super) fn remove_quote(value: &str) -> String {
     let mut chars = value.chars();
     chars.next();
     chars.next_back();

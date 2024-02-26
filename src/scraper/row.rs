@@ -31,7 +31,7 @@ pub struct LocationRow {
 /// Implementation of LocationRow.
 impl LocationRow {
     /// Creates LocationRow from a vector of data extracted from a DataFrame row.
-    pub(crate) fn new(loc: &mut [SeriesIter]) -> Self {
+    pub(super) fn new(loc: &mut [SeriesIter]) -> Self {
         if loc.len() == 3 {
             LocationRow::new_location(
                 remove_quote(&loc[0].next().unwrap().to_string()),
@@ -49,7 +49,7 @@ impl LocationRow {
     }
 
     /// Creates LocationRow for hotspot location.
-    pub(crate) fn new_hotspot(
+    pub(super) fn new_hotspot(
         country: String,
         region: String,
         sub_region: String,
@@ -64,7 +64,7 @@ impl LocationRow {
     }
 
     /// Creates LocationRow for subregion location.
-    pub(crate) fn new_location(country: String, region: String, sub_region: String) -> Self {
+    pub(super) fn new_location(country: String, region: String, sub_region: String) -> Self {
         LocationRow {
             country,
             region,
@@ -74,22 +74,22 @@ impl LocationRow {
     }
 
     /// Returns the LocationRow country.
-    pub(crate) fn country(&self) -> &str {
+    pub(super) fn country(&self) -> &str {
         self.country.as_str()
     }
 
     /// Returns the LocationRow region.
-    pub(crate) fn region(&self) -> &str {
+    pub(super) fn region(&self) -> &str {
         self.region.as_str()
     }
 
     /// Returns the LocationRow sub-region.
-    pub(crate) fn sub_region(&self) -> &str {
+    pub(super) fn sub_region(&self) -> &str {
         self.sub_region.as_str()
     }
 
     /// Returns the LocationRow hotspot.
-    pub(crate) fn hotspot(&self) -> Option<&str> {
+    pub(super) fn hotspot(&self) -> Option<&str> {
         self.hotspot.as_deref()
     }
 }

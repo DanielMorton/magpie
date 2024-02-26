@@ -163,7 +163,7 @@ impl Scraper {
     DateType for a single target species extraction query. If there is an error or the wrong URL
     is returned, retries the request after short interval. This interval is doubled for each retry.
     */
-    pub(super) fn get_response(
+    fn get_response(
         &self,
         loc: &Vec<(String, String)>,
         time: &Vec<(String, u8)>,
@@ -198,7 +198,7 @@ impl Scraper {
     Constructs all payloads and scrapes all pages for locations in loc_df. Uses all available cores
     to scrape multiple sites at one time. Returns all output concatenated as a single polars DataFrame.
     */
-    pub fn scrape_pages(self) -> DataFrame {
+    pub fn scrape_pages(&self) -> DataFrame {
         let date_query = Arc::new(vec![("t2", self.date_range.to_string())]);
         let selectors = Arc::new(Selectors::new());
         let (doc_selector, doc_format) = if self.location_level == LocationLevel::Hotspot {
@@ -252,7 +252,7 @@ impl Scraper {
     Only returns data about native and naturalized species, exotics and escapees are discarded.
     If no data for location and time parameters, returns an empty table.
      */
-    pub(super) fn scrape_page(
+    fn scrape_page(
         &self,
         selectors: &Arc<Selectors>,
         doc_selector: &Selector,
