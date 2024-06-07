@@ -9,7 +9,7 @@ static REGION_SELECT: &str = r#"a[href^="region"]"#;
 static ROWS: &str = r#"li[class="ResultsStats ResultsStats--action ResultsStats--toEdge"]"#;
 static SCI_NAME: &str = r#"em[class="sci"]"#;
 static SPECIES: &str = r#"div[class="SpecimenHeader"]"#;
-static SPECIES_COUNT: &str = r#"strong[class="Heading Heading--h1"]"#;
+static SPECIES_COUNT: &str = r#"strong[class="Heading Heading--h2"]"#;
 
 /**
 Struct containing all the HTML selectors used when parsing the HTML of the scraped web pages.
