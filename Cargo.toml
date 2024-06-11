@@ -1,6 +1,6 @@
 [package]
 name = "magpie-bird"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["DanielMorton <dacmorton@gmail.com>"]
 description = "eBird Target Bird Scraper"
 license = "MIT OR Apache-2.0"
@@ -26,7 +26,7 @@ version = "0.17.7"
 features = ["rayon"]
 
 [dependencies.polars]
-version = "0.35.4"
+version = "0.37.0"
 features = ["diagonal_concat", "lazy", "temporal"]
 
 [dependencies.reqwest]
