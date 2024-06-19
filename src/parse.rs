@@ -1,3 +1,4 @@
+use crate::app::AppType;
 use crate::scraper::scrape_params::LocationLevel::{Hotspot, SubRegion};
 use crate::scraper::scrape_params::{DateRange, ListType, LocationLevel};
 use clap::{arg, value_parser, Arg, ArgGroup, ArgMatches, Command};
@@ -12,24 +13,23 @@ static DEFAULT_LOCATION: &str = "regions.csv";
 */
 pub(super) fn parse() -> ArgMatches {
     Command::new("magpie")
+        .arg(arg!(--species))
+        .arg(arg!(--location))
+        .group(
+            ArgGroup::new("app")
+                .args(["species", "location"])
+                .required(true),
+        )
         .arg(arg!(--local))
         .arg(arg!(--region))
         .arg(arg!(--country))
         .arg(arg!(--global))
-        .group(
-            ArgGroup::new("list_type")
-                .args(["local", "region", "country", "global"])
-                .required(true),
-        )
+        .group(ArgGroup::new("list_type").args(["local", "region", "country", "global"]))
         .arg(arg!(--life))
         .arg(arg!(--ytd))
         .arg(arg!(--current_month))
         .arg(arg!(--date))
-        .group(
-            ArgGroup::new("date_range")
-                .args(["life", "ytd", "current_month", "date"])
-                .required(true),
-        )
+        .group(ArgGroup::new("date_range").args(["life", "ytd", "current_month", "date"]))
         .arg(arg!(--year))
         .arg(arg!(--all))
         .arg(
@@ -39,19 +39,11 @@ pub(super) fn parse() -> ArgMatches {
                 .value_parser(value_parser!(u8)),
         )
         .arg(arg!(--range <RANGE>))
-        .group(
-            ArgGroup::new("time_range")
-                .args(["year", "month", "all", "range"])
-                .required(true),
-        )
+        .group(ArgGroup::new("time_range").args(["year", "month", "all", "range"]))
         .arg(arg!(--hotspot <HOTSPOT>))
         .arg(arg!(--subregion <SUBREGION>))
-        .group(
-            ArgGroup::new("list-type")
-                .args(["hotspot", "subregion"])
-                .required(true),
-        )
-        .arg(arg!(--output <OUTPUT>).required(true))
+        .group(ArgGroup::new("list-type").args(["hotspot", "subregion"]))
+        .arg(arg!(--output <OUTPUT>))
         .get_matches()
 }
 
@@ -59,6 +51,8 @@ pub(super) fn parse() -> ArgMatches {
  Trait for parsing the magpie specific command line arguments.
 */
 pub(super) trait MagpieParse {
+    fn get_app(&self) -> AppType;
+
     /// Extracts the DateRange.
     fn get_date_range(&self) -> DateRange;
 
@@ -80,6 +74,16 @@ pub(super) trait MagpieParse {
  Implementation of MagpieParse for ArgMatches.
 */
 impl MagpieParse for ArgMatches {
+    fn get_app(&self) -> AppType {
+        if self.get_flag("species") {
+            AppType::Species
+        } else if self.get_flag("location") {
+            AppType::Location
+        } else {
+            panic!("Invalid selection for application.")
+        }
+    }
+
     /// Extracts the DateRange.
     fn get_date_range(&self) -> DateRange {
         if self.get_flag("life") {

@@ -14,7 +14,7 @@ static SPECIES_COUNT: &str = r#"strong[class="Heading Heading--h2"]"#;
 /**
 Struct containing all the HTML selectors used when parsing the HTML of the scraped web pages.
 */
-pub(super) struct Selectors {
+pub(crate) struct Selectors {
     /// Selects HTML tag "a".
     pub(crate) a: Selector,
 

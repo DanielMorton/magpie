@@ -183,6 +183,7 @@ impl Scraper {
                 if !(url.contains(LOGIN_URL) || url.contains(HOME_URL)) {
                     response
                 } else {
+                    println!("{}", url);
                     thread::sleep(Duration::from_secs(sleep));
                     self.get_response(loc, time, date_query, 2 * sleep)
                 }
@@ -264,7 +265,6 @@ impl Scraper {
     ) -> DataFrame {
         let loc_code = &loc[0].1;
         let response = self.get_response(&loc, time, date_query, sleep);
-        //let url = response.url().to_string();
         let doc = match response.text() {
             Ok(text) => Html::parse_document(&text),
             Err(e) => {
