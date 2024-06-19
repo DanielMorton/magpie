@@ -20,7 +20,8 @@ fn parse_row(row: &ElementRef) -> (String, String) {
     let name = row
         .value()
         .attr("title")
-        .unwrap_or_else(|| panic!("No name for row: {:?}", row)).to_string();
+        .unwrap_or_else(|| panic!("No name for row: {:?}", row))
+        .to_string();
     let code = match url.split("/").collect::<Vec<_>>().last() {
         Some(&c) => c.to_owned(),
         None => panic!("Improperly formatted url for row: {:?}", row),

@@ -1,10 +1,10 @@
-use std::fs::File;
 use crate::location::regions::{get_countries, get_regions, get_sub_regions};
 use crate::location::selectors::Selectors;
-use polars::prelude::{CsvWriter, NamedFrom, Series, SerWriter};
-use rayon::prelude::*;
-use std::time::Instant;
 use polars::functions::concat_df_diagonal;
+use polars::prelude::{CsvWriter, NamedFrom, SerWriter, Series};
+use rayon::prelude::*;
+use std::fs::File;
+use std::time::Instant;
 
 use crate::location::df::{country_to_df, filter_join_df, region_to_df, sub_region_to_df};
 use reqwest::blocking::Client;
@@ -89,9 +89,10 @@ pub fn run() {
         Ok(_) => (),
         Err(e) => panic!("{:?}", e),
     };
-    let mut output = match concat_df_diagonal(&[country_filter_df, region_filter_df, sub_region_df]) {
+    let mut output = match concat_df_diagonal(&[country_filter_df, region_filter_df, sub_region_df])
+    {
         Ok(df) => df,
-        Err(e) => panic!("{:?}", e)
+        Err(e) => panic!("{:?}", e),
     };
     let file = match File::create("regions_pl.csv") {
         Ok(f) => f,
