@@ -11,52 +11,35 @@ fn get_html(client: &Client, url: &str) -> Html {
         Err(e) => panic!("{:?}", e),
     }
 }
-fn parse_country(row: &ElementRef) -> Country {
+
+fn parse_row(row: &ElementRef) -> (String, String) {
     let url = row
         .value()
         .attr("href")
         .unwrap_or_else(|| panic!("No url for row : {:?}", row));
-    let country = row
+    let name = row
         .value()
         .attr("title")
-        .unwrap_or_else(|| panic!("No country name for row: {:?}", row));
-    let country_code = match url.split("/").collect::<Vec<_>>().last() {
-        Some(&c) => c,
+        .unwrap_or_else(|| panic!("No name for row: {:?}", row)).to_string();
+    let code = match url.split("/").collect::<Vec<_>>().last() {
+        Some(&c) => c.to_owned(),
         None => panic!("Improperly formatted url for row: {:?}", row),
     };
-    Country::new(country.to_owned(), country_code.to_owned())
+    (name, code)
+}
+fn parse_country(row: &ElementRef) -> Country {
+    let (country, country_code) = parse_row(row);
+    Country::new(country, country_code)
 }
 
 fn parse_region<'a>(row: &ElementRef, country: &'a Country) -> Region<'a> {
-    let url = row
-        .value()
-        .attr("href")
-        .unwrap_or_else(|| panic!("No url for row : {:?}", row));
-    let region = row
-        .value()
-        .attr("title")
-        .unwrap_or_else(|| panic!("No region name for row: {:?}", row));
-    let region_code = match url.split("/").collect::<Vec<_>>().last() {
-        Some(&r) => r,
-        None => panic!("Improperly formatted url for row: {:?}", row),
-    };
-    Region::new(region.to_owned(), region_code.to_owned(), country)
+    let (region, region_code) = parse_row(row);
+    Region::new(region, region_code, country)
 }
 
 fn parse_sub_region<'a>(row: &ElementRef, region: &'a Region) -> SubRegion<'a> {
-    let url = row
-        .value()
-        .attr("href")
-        .unwrap_or_else(|| panic!("No url for row : {:?}", row));
-    let sub_region = row
-        .value()
-        .attr("title")
-        .unwrap_or_else(|| panic!("No sub-region name for row: {:?}", row));
-    let sub_region_code = match url.split("/").collect::<Vec<_>>().last() {
-        Some(&r) => r,
-        None => panic!("Improperly formatted url for row: {:?}", row),
-    };
-    SubRegion::new(sub_region.to_owned(), sub_region_code.to_owned(), region)
+    let (sub_region, sub_region_code) = parse_row(row);
+    SubRegion::new(sub_region, sub_region_code, region)
 }
 
 pub fn get_countries(client: &Client, selectors: &Selectors) -> Vec<Country> {
