@@ -1,18 +1,18 @@
-use crate::location::country::{Country, Region, SubRegion};
+use crate::location::location::{Country, Region, SubRegion};
 use crate::location::selectors::Selectors;
 use crate::location::{COUNTRIES, REGIONS, SUBREGIONS};
 use reqwest::blocking::Client;
 use scraper::{ElementRef, Html};
 use std::collections::HashSet;
 
-fn get_html(client: &Client, url: &str) -> Html {
+pub(crate) fn get_html(client: &Client, url: &str) -> Html {
     match client.get(url).send().and_then(|respone| respone.text()) {
         Ok(text) => Html::parse_document(&text),
         Err(e) => panic!("{:?}", e),
     }
 }
 
-fn parse_row(row: &ElementRef) -> (String, String) {
+pub(crate) fn parse_row(row: &ElementRef) -> (String, String) {
     let url = row
         .value()
         .attr("href")
@@ -44,8 +44,8 @@ fn parse_sub_region<'a>(row: &ElementRef, region: &'a Region) -> SubRegion<'a> {
 }
 
 pub fn get_countries(client: &Client, selectors: &Selectors) -> Vec<Country> {
-    let html = get_html(client, COUNTRIES);
-    html.select(&selectors.leaderboard)
+    get_html(client, COUNTRIES)
+        .select(&selectors.leaderboard)
         .next()
         .map(|element| {
             element
@@ -64,8 +64,8 @@ pub fn get_regions<'a>(
     country: &'a Country,
 ) -> Vec<Region<'a>> {
     let region_url = format!("{}/{}/{}", REGIONS, country.country_code, SUBREGIONS);
-    let html = get_html(client, &region_url);
-    html.select(&selectors.leaderboard)
+    let regions = get_html(client, &region_url)
+        .select(&selectors.leaderboard)
         .next()
         .map(|element| {
             element
@@ -75,7 +75,13 @@ pub fn get_regions<'a>(
         })
         .unwrap_or(HashSet::new())
         .into_iter()
-        .collect::<Vec<_>>()
+        .collect::<Vec<_>>();
+    if regions.len() > 0 {
+        regions
+    } else {
+        vec![Region::new(country.country.to_owned(),
+                         country.country_code.to_owned(), &country)]
+    }
 }
 
 pub fn get_sub_regions<'a>(
@@ -84,8 +90,8 @@ pub fn get_sub_regions<'a>(
     region: &'a Region,
 ) -> Vec<SubRegion<'a>> {
     let sub_region_url = format!("{}/{}/{}", REGIONS, region.region_code, SUBREGIONS);
-    let html = get_html(client, &sub_region_url);
-    html.select(&selectors.leaderboard)
+    let sub_regions = get_html(client, &sub_region_url)
+        .select(&selectors.leaderboard)
         .next()
         .map(|element| {
             element
@@ -95,5 +101,11 @@ pub fn get_sub_regions<'a>(
         })
         .unwrap_or(HashSet::new())
         .into_iter()
-        .collect::<Vec<_>>()
+        .collect::<Vec<_>>();
+    if sub_regions.len() > 0 {
+        sub_regions
+    } else {
+        vec![SubRegion::new(region.region.to_owned(),
+                             region.region_code.to_owned(), &region)]
+    }
 }

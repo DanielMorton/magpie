@@ -265,6 +265,7 @@ impl Scraper {
     ) -> DataFrame {
         let loc_code = &loc[0].1;
         let response = self.get_response(&loc, time, date_query, sleep);
+        let url = response.url().to_string();
         let doc = match response.text() {
             Ok(text) => Html::parse_document(&text),
             Err(e) => {
@@ -290,7 +291,7 @@ impl Scraper {
             Some(_) => (),
             None => {
                 thread::sleep(Duration::from_secs(sleep));
-                return self.scrape_page(
+                /*return self.scrape_page(
                     selectors,
                     doc_selector,
                     loc,
@@ -298,14 +299,14 @@ impl Scraper {
                     date_query,
                     doc_format,
                     min(2 * sleep, MAX_BACKOFF),
-                );
-                /* return if sleep >= MAX_BACKOFF {
+                );*/
+                 return if sleep >= MAX_BACKOFF {
                     println!("Hotspot Empty {} {} {}", url, loc_code, &sleep);
                     empty_table()
                 } else {
                     thread::sleep(Duration::from_secs(sleep));
-                    scrape_page(scraper, selectors, loc, time, date_query, 2 * sleep)
-                }*/
+                    self.scrape_page(selectors, doc_selector, loc, time, date_query, doc_format, 2 * sleep)
+                }
             }
         }
         let checklists = doc

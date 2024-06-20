@@ -1,13 +1,13 @@
 use crate::location::regions::{get_countries, get_regions, get_sub_regions};
 use crate::location::selectors::Selectors;
-use polars::functions::concat_df_diagonal;
-use polars::prelude::{CsvWriter, NamedFrom, SerWriter, Series};
+use polars::prelude::{CsvWriter, SerWriter};
 use rayon::prelude::*;
 use std::fs::File;
 use std::time::Instant;
 
-use crate::location::df::{country_to_df, filter_join_df, region_to_df, sub_region_to_df};
+use crate::location::df::{hotspot_to_df, sub_region_to_df};
 use reqwest::blocking::Client;
+use crate::location::hotspot::get_hotspots;
 
 pub fn print_hms(start: &Instant) {
     let millis = start.elapsed().as_millis();
@@ -20,7 +20,7 @@ pub fn run() {
     let client = Client::builder().cookie_store(true).build().unwrap();
     let selectors = Selectors::new();
 
-    let s = Instant::now();
+    let mut s = Instant::now();
     let countries = get_countries(&client, &selectors);
     let regions = countries
         .par_iter()
@@ -29,81 +29,40 @@ pub fn run() {
         .collect::<Vec<_>>();
     let sub_regions = regions
         .par_iter()
-        .map(|c| get_sub_regions(&client, &selectors, c))
+        .map(|r| get_sub_regions(&client, &selectors, r))
         .flatten()
         .collect::<Vec<_>>();
-    let country_df = country_to_df(&countries);
-    let region_df = region_to_df(&regions);
-    let sub_region_df = sub_region_to_df(&sub_regions);
-    let mut country_filter_df = filter_join_df(
-        &country_df,
-        &region_df,
-        &["country", "country_code"],
-        "region",
-    );
-    let mut region_filter_df = filter_join_df(
-        &region_df,
-        &sub_region_df,
-        &["country", "country_code", "region", "region_code"],
-        "sub_region",
-    );
-    match country_filter_df.with_column(Series::new(
-        "region",
-        country_filter_df.column("country").unwrap(),
-    )) {
-        Ok(_) => (),
-        Err(e) => panic!("{:?}", e),
-    };
-    match country_filter_df.with_column(Series::new(
-        "region_code",
-        country_filter_df.column("country_code").unwrap(),
-    )) {
-        Ok(_) => (),
-        Err(e) => panic!("{:?}", e),
-    };
-    match country_filter_df.with_column(Series::new(
-        "sub_region",
-        country_filter_df.column("country").unwrap(),
-    )) {
-        Ok(_) => (),
-        Err(e) => panic!("{:?}", e),
-    };
-    match country_filter_df.with_column(Series::new(
-        "sub_region_code",
-        country_filter_df.column("country_code").unwrap(),
-    )) {
-        Ok(_) => (),
-        Err(e) => panic!("{:?}", e),
-    };
-    match region_filter_df.with_column(Series::new(
-        "sub_region",
-        region_filter_df.column("region").unwrap(),
-    )) {
-        Ok(_) => (),
-        Err(e) => panic!("{:?}", e),
-    };
-    match region_filter_df.with_column(Series::new(
-        "sub_region_code",
-        region_filter_df.column("region_code").unwrap(),
-    )) {
-        Ok(_) => (),
-        Err(e) => panic!("{:?}", e),
-    };
-    let mut output = match concat_df_diagonal(&[country_filter_df, region_filter_df, sub_region_df])
-    {
-        Ok(df) => df,
-        Err(e) => panic!("{:?}", e),
-    };
+    let mut sub_region_df = sub_region_to_df(&sub_regions);
+    println!("{}", sub_region_df);
+    print_hms(&s);
+    s = Instant::now();
+    let hotspots = sub_regions.par_iter()
+        .map(|s| get_hotspots(&client, &selectors, s))
+        .flatten()
+        .collect::<Vec<_>>();
+    let mut hotspot_df = hotspot_to_df(&hotspots);
+    println!("{}", hotspot_df);
+    print_hms(&s);
     let file = match File::create("regions_pl.csv") {
         Ok(f) => f,
         Err(e) => panic!("{}", e),
     };
     match CsvWriter::new(&file)
         .include_header(true)
-        .finish(&mut output)
+        .finish(&mut sub_region_df)
     {
         Ok(_) => (),
         Err(e) => panic!("{:?}", e),
     }
-    print_hms(&s)
+    let hotspot_file = match File::create("hotspots_pl.csv") {
+        Ok(f) => f,
+        Err(e) => panic!("{}", e),
+    };
+    match CsvWriter::new(&hotspot_file)
+        .include_header(true)
+        .finish(&mut hotspot_df)
+    {
+        Ok(_) => (),
+        Err(e) => panic!("{:?}", e),
+    }
 }

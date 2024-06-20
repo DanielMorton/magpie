@@ -13,7 +13,6 @@ extern crate strum_macros;
 
 use crate::app::AppType;
 use parse::MagpieParse;
-use polars::io::prelude::*;
 
 fn main() {
     let matches = parse::parse();
