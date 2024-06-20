@@ -22,7 +22,7 @@ pub(crate) fn parse_row(row: &ElementRef) -> (String, String) {
         .attr("title")
         .unwrap_or_else(|| panic!("No name for row: {:?}", row))
         .to_string();
-    let code = match url.split("/").collect::<Vec<_>>().last() {
+    let code = match url.split('/').collect::<Vec<_>>().last() {
         Some(&c) => c.to_owned(),
         None => panic!("Improperly formatted url for row: {:?}", row),
     };
@@ -53,7 +53,7 @@ pub fn get_countries(client: &Client, selectors: &Selectors) -> Vec<Country> {
                 .map(|row| parse_country(&row))
                 .collect::<HashSet<_>>()
         })
-        .unwrap_or(HashSet::new())
+        .unwrap_or_default()
         .into_iter()
         .collect::<Vec<_>>()
 }
@@ -73,16 +73,16 @@ pub fn get_regions<'a>(
                 .map(|row| parse_region(&row, country))
                 .collect::<HashSet<_>>()
         })
-        .unwrap_or(HashSet::new())
+        .unwrap_or_default()
         .into_iter()
         .collect::<Vec<_>>();
-    if regions.len() > 0 {
+    if !regions.is_empty() {
         regions
     } else {
         vec![Region::new(
             country.country.to_owned(),
             country.country_code.to_owned(),
-            &country,
+            country,
         )]
     }
 }
@@ -102,16 +102,16 @@ pub fn get_sub_regions<'a>(
                 .map(|row| parse_sub_region(&row, region))
                 .collect::<HashSet<_>>()
         })
-        .unwrap_or(HashSet::new())
+        .unwrap_or_default()
         .into_iter()
         .collect::<Vec<_>>();
-    if sub_regions.len() > 0 {
+    if !sub_regions.is_empty() {
         sub_regions
     } else {
         vec![SubRegion::new(
             region.region.to_owned(),
             region.region_code.to_owned(),
-            &region,
+            region,
         )]
     }
 }

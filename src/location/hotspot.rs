@@ -25,7 +25,7 @@ pub fn get_hotspots<'a>(
                 .map(|row| parse_hotspot(&row, sub_region))
                 .collect::<HashSet<_>>()
         })
-        .unwrap_or(HashSet::new())
+        .unwrap_or_default()
         .into_iter()
         .collect::<Vec<_>>()
 }
