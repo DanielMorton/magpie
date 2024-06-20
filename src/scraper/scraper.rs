@@ -300,13 +300,21 @@ impl Scraper {
                     doc_format,
                     min(2 * sleep, MAX_BACKOFF),
                 );*/
-                 return if sleep >= MAX_BACKOFF {
+                return if sleep >= MAX_BACKOFF {
                     println!("Hotspot Empty {} {} {}", url, loc_code, &sleep);
                     empty_table()
                 } else {
                     thread::sleep(Duration::from_secs(sleep));
-                    self.scrape_page(selectors, doc_selector, loc, time, date_query, doc_format, 2 * sleep)
-                }
+                    self.scrape_page(
+                        selectors,
+                        doc_selector,
+                        loc,
+                        time,
+                        date_query,
+                        doc_format,
+                        2 * sleep,
+                    )
+                };
             }
         }
         let checklists = doc

@@ -74,7 +74,11 @@ pub(crate) struct Hotspot<'a> {
 }
 
 impl<'a> Hotspot<'a> {
-    pub(crate) fn new(hotspot: String, hotspot_code: String, sub_region: &'a SubRegion<'a>) -> Self {
+    pub(crate) fn new(
+        hotspot: String,
+        hotspot_code: String,
+        sub_region: &'a SubRegion<'a>,
+    ) -> Self {
         Hotspot {
             hotspot,
             hotspot_code,
@@ -100,5 +104,4 @@ impl<'a> Hotspot<'a> {
     pub(crate) fn sub_region_code(&self) -> String {
         self.sub_region.sub_region_code.to_owned()
     }
-
 }

@@ -6,8 +6,8 @@ use std::fs::File;
 use std::time::Instant;
 
 use crate::location::df::{hotspot_to_df, sub_region_to_df};
-use reqwest::blocking::Client;
 use crate::location::hotspot::get_hotspots;
+use reqwest::blocking::Client;
 
 pub fn print_hms(start: &Instant) {
     let millis = start.elapsed().as_millis();
@@ -36,7 +36,8 @@ pub fn run() {
     println!("{}", sub_region_df);
     print_hms(&s);
     s = Instant::now();
-    let hotspots = sub_regions.par_iter()
+    let hotspots = sub_regions
+        .par_iter()
         .map(|s| get_hotspots(&client, &selectors, s))
         .flatten()
         .collect::<Vec<_>>();

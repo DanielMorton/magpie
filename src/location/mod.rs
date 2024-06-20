@@ -1,8 +1,8 @@
-mod location;
 pub mod df;
+pub mod hotspot;
+mod location;
 pub mod regions;
 pub mod selectors;
-pub mod hotspot;
 
 static COUNTRIES: &str = "https://ebird.org/region/world/subregions";
 
