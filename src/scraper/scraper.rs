@@ -183,7 +183,6 @@ impl Scraper {
                 if !(url.contains(LOGIN_URL) || url.contains(HOME_URL)) {
                     response
                 } else {
-                    println!("{}", url);
                     thread::sleep(Duration::from_secs(sleep));
                     self.get_response(loc, time, date_query, 2 * sleep)
                 }
