@@ -33,7 +33,6 @@ pub fn run() {
         .flatten()
         .collect::<Vec<_>>();
     let mut sub_region_df = sub_region_to_df(&sub_regions);
-    println!("{}", sub_region_df);
     print_hms(&s);
     s = Instant::now();
     let hotspots = sub_regions
@@ -42,7 +41,6 @@ pub fn run() {
         .flatten()
         .collect::<Vec<_>>();
     let mut hotspot_df = hotspot_to_df(&hotspots);
-    println!("{}", hotspot_df);
     print_hms(&s);
     let file = match File::create("regions_pl.csv") {
         Ok(f) => f,
