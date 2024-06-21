@@ -57,7 +57,7 @@ fn get_percent(row: &ElementRef, selectors: &Arc<Selectors>) -> f32 {
         .and_then(|p| p.split('%').next())
         .map(|p| match f32::from_str(p) {
             Ok(f) => f,
-            Err(e) => panic!("{}", e),
+            Err(e) => panic!("No percentage for row {:?} \n {}", row, e),
         })
         .unwrap_or(0.0)
 }
