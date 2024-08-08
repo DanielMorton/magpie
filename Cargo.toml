@@ -12,23 +12,23 @@ exclude = [
 ]
 
 [dependencies]
-clap = "4.4.11"
-itertools = "0.12.0"
+clap = "4.5.10"
+itertools = "0.13.0"
 num_cpus = "1.16.0"
-rayon = "1.8.0"
+rayon = "1.10.0"
 rpassword = "7.3.1"
 scraper = "0.18.1"
 strum = "0.26.1"
 strum_macros = "0.26.1"
 
 [dependencies.indicatif]
-version = "0.17.7"
+version = "0.17.8"
 features = ["rayon"]
 
 [dependencies.polars]
-version = "0.35.4"
+version = "0.41.3"
 features = ["diagonal_concat", "lazy", "temporal"]
 
 [dependencies.reqwest]
-version = "0.11.23"
+version = "0.11.24"
 features = ["blocking", "cookies", "json"]

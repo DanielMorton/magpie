@@ -13,15 +13,9 @@ sub-region, region, country, hotspot (if applicable), and the start and end mont
 */
 pub(super) fn add_columns(df: &mut DataFrame, row: &LocationRow, time: &[(String, u8)]) {
     let size = df.shape().0;
-    match df.with_column(Series::new(SUB_REGION, vec![row.sub_region(); size])) {
-        Ok(_) => (),
-        Err(e) => panic!("{:?}", e),
-    };
-    match df.with_column(Series::new(REGION, vec![row.region(); size])) {
-        Ok(_) => (),
-        Err(e) => panic!("{:?}", e),
-    };
-    match df.with_column(Series::new(COUNTRY, vec![row.country(); size])) {
+    match df.with_column(Series::new(SUB_REGION, vec![row.sub_region(); size]))
+        .and_then(|df| df.with_column(Series::new(REGION, vec![row.region(); size])))
+        .and_then(|df| df.with_column(Series::new(COUNTRY, vec![row.country(); size]))){
         Ok(_) => (),
         Err(e) => panic!("{:?}", e),
     };
@@ -31,11 +25,8 @@ pub(super) fn add_columns(df: &mut DataFrame, row: &LocationRow, time: &[(String
             Err(e) => panic!("{:?}", e),
         }
     });
-    match df.with_column(Series::new(START_MONTH, vec![time[0].1 as u32; size])) {
-        Ok(_) => (),
-        Err(e) => panic!("{:?}", e),
-    };
-    match df.with_column(Series::new(END_MONTH, vec![time[1].1 as u32; size])) {
+    match df.with_column(Series::new(START_MONTH, vec![time[0].1 as u32; size]))
+        .and_then(|df| df.with_column(Series::new(END_MONTH, vec![time[1].1 as u32; size]))){
         Ok(_) => (),
         Err(e) => panic!("{:?}", e),
     };
