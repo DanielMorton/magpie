@@ -11,7 +11,7 @@ static DEFAULT_LOCATION: &str = "regions.csv";
  The location tag accepts as input the csv file containing the locations for which data is to be
  scraped. An output csv file must also be specified.
 */
-pub(super) fn parse() -> ArgMatches {
+pub(crate) fn parse() -> ArgMatches {
     Command::new("magpie")
         .arg(arg!(--species))
         .arg(arg!(--location))
@@ -50,7 +50,7 @@ pub(super) fn parse() -> ArgMatches {
 /**
  Trait for parsing the magpie specific command line arguments.
 */
-pub(super) trait MagpieParse {
+pub(crate) trait MagpieParse {
     fn get_app(&self) -> AppType;
 
     /// Extracts the DateRange.
