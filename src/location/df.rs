@@ -1,4 +1,4 @@
-use crate::location::location::{Hotspot, SubRegion};
+use crate::location::loc::{Hotspot, SubRegion};
 use polars::prelude::{DataFrame, NamedFrom, Series};
 
 pub fn sub_region_to_df(sub_regions: &[SubRegion]) -> DataFrame {

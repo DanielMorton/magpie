@@ -1,4 +1,4 @@
-use crate::location::location::{Hotspot, SubRegion};
+use crate::location::loc::{Hotspot, SubRegion};
 use crate::location::regions::{get_html, parse_row};
 use crate::location::selectors::Selectors;
 use crate::location::{HOTSPOT, REGIONS};

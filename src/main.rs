@@ -5,7 +5,7 @@ mod login;
 mod parse;
 mod run_location;
 mod run_scraper;
-mod scraper;
+mod target;
 
 extern crate strum;
 #[macro_use]

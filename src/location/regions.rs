@@ -1,4 +1,4 @@
-use crate::location::location::{Country, Region, SubRegion};
+use crate::location::loc::{Country, Region, SubRegion};
 use crate::location::selectors::Selectors;
 use crate::location::{COUNTRIES, REGIONS, SUBREGIONS};
 use reqwest::blocking::Client;

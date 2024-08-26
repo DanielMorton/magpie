@@ -1,6 +1,6 @@
 use crate::app::AppType;
-use crate::scraper::scrape_params::LocationLevel::{Hotspot, SubRegion};
-use crate::scraper::scrape_params::{DateRange, ListType, LocationLevel};
+use crate::target::scrape_params::LocationLevel::{Hotspot, SubRegion};
+use crate::target::scrape_params::{DateRange, ListType, LocationLevel};
 use clap::{arg, value_parser, Arg, ArgGroup, ArgMatches, Command};
 
 static DEFAULT_LOCATION: &str = "regions.csv";
@@ -101,17 +101,14 @@ impl MagpieParse for ArgMatches {
 
     /// Extracts the ListType
     fn get_list_type(&self) -> ListType {
-        match self.get_one::<String>("hotspot") {
-            Some(_) => {
-                if self.get_flag("local") {
-                    return ListType::Hotspot;
-                } else if self.get_flag("global") {
-                    return ListType::Global;
-                } else {
-                    panic!("Invalid List Type for hotspot list.")
-                }
+        if  self.get_one::<String>("hotspot").is_some() {
+            if self.get_flag("local") {
+                return ListType::Hotspot;
+            } else if self.get_flag("global") {
+                return ListType::Global;
+            } else {
+                panic!("Invalid List Type for hotspot list.")
             }
-            None => (),
         };
         match self.get_one::<String>("subregion") {
             Some(_) => {

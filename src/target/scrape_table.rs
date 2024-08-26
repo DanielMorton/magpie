@@ -1,5 +1,5 @@
-use crate::scraper::selectors::Selectors;
-use crate::scraper::{CHECKLISTS, COMMON_NAME, PERCENT, SCIENTIFIC_NAME};
+use crate::target::selectors::Selectors;
+use crate::target::{CHECKLISTS, COMMON_NAME, PERCENT, SCIENTIFIC_NAME};
 use polars::functions::concat_df_diagonal;
 use polars::prelude::{DataFrame, NamedFrom, Series};
 use scraper::ElementRef;

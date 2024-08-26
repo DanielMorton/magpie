@@ -1,5 +1,5 @@
-use crate::scraper::row::LocationRow;
-use crate::scraper::{
+use crate::target::row::LocationRow;
+use crate::target::{
     COMMON_NAME, COUNTRY, END_MONTH, HOTSPOT, PERCENT, REGION, SCIENTIFIC_NAME, START_MONTH,
     SUB_REGION,
 };

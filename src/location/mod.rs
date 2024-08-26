@@ -1,6 +1,6 @@
 pub mod df;
 pub mod hotspot;
-mod location;
+mod loc;
 pub mod regions;
 pub mod selectors;
 

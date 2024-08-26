@@ -1,10 +1,10 @@
-use crate::scraper::row::LocationRow;
-use crate::scraper::scrape_params::{DateRange, ListType, LocationLevel};
-use crate::scraper::scrape_table::scrape_table;
-use crate::scraper::selectors::Selectors;
-use crate::scraper::table::{add_columns, empty_table};
-use crate::scraper::utils::{print_hms, remove_quote};
-use crate::scraper::{
+use crate::target::row::LocationRow;
+use crate::target::scrape_params::{DateRange, ListType, LocationLevel};
+use crate::target::scrape_table::scrape_table;
+use crate::target::selectors::Selectors;
+use crate::target::table::{add_columns, empty_table};
+use crate::target::utils::{print_hms, remove_quote};
+use crate::target::{
     BASE_URL, HOME_URL, HOTSPOT, HOTSPOT_COLUMNS, LOGIN_URL, MAX_BACKOFF, MIN_BACKOFF, REGION,
     REGION_COLUMNS,
 };

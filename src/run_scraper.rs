@@ -1,7 +1,7 @@
 use crate::loc::load_data;
 use crate::login;
 use crate::parse::MagpieParse;
-use crate::scraper::Scraper;
+use crate::target::Scraper;
 use clap::ArgMatches;
 use polars::io::prelude::*;
 use polars::prelude::CsvWriter;

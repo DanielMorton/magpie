@@ -1,4 +1,4 @@
-use crate::scraper::utils::remove_quote;
+use crate::target::utils::remove_quote;
 use polars::series::SeriesIter;
 
 #[derive(Debug, Clone)]
