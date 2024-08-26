@@ -101,7 +101,7 @@ impl MagpieParse for ArgMatches {
 
     /// Extracts the ListType
     fn get_list_type(&self) -> ListType {
-        if  self.get_one::<String>("hotspot").is_some() {
+        if self.get_one::<String>("hotspot").is_some() {
             if self.get_flag("local") {
                 return ListType::Hotspot;
             } else if self.get_flag("global") {

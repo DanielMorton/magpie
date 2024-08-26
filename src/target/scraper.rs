@@ -14,7 +14,7 @@ use polars::functions::concat_df_diagonal;
 use polars::prelude::DataFrame;
 use rayon::prelude::*;
 use reqwest::blocking::{Client, Response};
-use scraper::{Html, Selector};
+use scraper::Html;
 use std::cmp::min;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -201,11 +201,6 @@ impl Scraper {
     pub fn scrape_pages(&self) -> DataFrame {
         let date_query = Arc::new(vec![("t2", self.date_range.to_string())]);
         let selectors = Arc::new(Selectors::new());
-        let (doc_selector, doc_format) = if self.location_level == LocationLevel::Hotspot {
-            (&selectors.hotspot_select, HOTSPOT)
-        } else {
-            (&selectors.region_select, REGION)
-        };
         let loc_query = self.make_loc_payload();
         let loc_vec = self.make_loc_vec();
         let time_query = self.make_time_payload();
@@ -225,15 +220,8 @@ impl Scraper {
             .into_par_iter()
             .progress_with_style(style)
             .map(|((row, loc), time)| {
-                let mut df = arc_scraper.scrape_page(
-                    &selectors,
-                    doc_selector,
-                    loc,
-                    &time,
-                    &date_query,
-                    doc_format,
-                    MIN_BACKOFF,
-                );
+                let mut df =
+                    arc_scraper.scrape_page(&selectors, loc, &time, &date_query, MIN_BACKOFF);
                 add_columns(&mut df, &row, &time);
                 df
             })
@@ -255,11 +243,9 @@ impl Scraper {
     fn scrape_page(
         &self,
         selectors: &Arc<Selectors>,
-        doc_selector: &Selector,
         loc: Vec<(String, String)>,
         time: &Vec<(String, u8)>,
         date_query: &Vec<(&str, String)>,
-        doc_format: &str,
         sleep: u64,
     ) -> DataFrame {
         let loc_code = &loc[0].1;
@@ -272,14 +258,17 @@ impl Scraper {
                 thread::sleep(Duration::from_secs(sleep));
                 return self.scrape_page(
                     selectors,
-                    doc_selector,
                     loc,
                     time,
                     date_query,
-                    doc_format,
                     min(2 * sleep, MAX_BACKOFF),
                 );
             }
+        };
+        let (doc_selector, doc_format) = if self.location_level == LocationLevel::Hotspot {
+            (&selectors.hotspot_select, HOTSPOT)
+        } else {
+            (&selectors.region_select, REGION)
         };
         match doc
             .select(doc_selector)
@@ -294,15 +283,7 @@ impl Scraper {
                     empty_table()
                 } else {
                     thread::sleep(Duration::from_secs(sleep));
-                    self.scrape_page(
-                        selectors,
-                        doc_selector,
-                        loc,
-                        time,
-                        date_query,
-                        doc_format,
-                        2 * sleep,
-                    )
+                    self.scrape_page(selectors, loc, time, date_query, 2 * sleep)
                 };
             }
         }
@@ -328,11 +309,9 @@ impl Scraper {
                 thread::sleep(Duration::from_secs(sleep));
                 self.scrape_page(
                     selectors,
-                    doc_selector,
                     loc,
                     time,
                     date_query,
-                    doc_format,
                     min(2 * sleep, MAX_BACKOFF),
                 )
             }
