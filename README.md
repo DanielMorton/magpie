@@ -1,5 +1,5 @@
 [![Build Status](https://circleci.com/gh/DanielMorton/magpie.svg?style=svg)](https://circleci.com/gh/DanielMorton/magpie)
-[![minimum rustc 1.75](https://img.shields.io/badge/rustc-1.75+-blue.svg)](https://rust-lang.github.io/rfcs/2495-min-rust-version.html)
+[![minimum rustc 1.75](https://img.shields.io/badge/rustc-1.80+-blue.svg)](https://rust-lang.github.io/rfcs/2495-min-rust-version.html)
 
 # Magpie
 Magpie is a tool for scraping target bird species from eBird. Any hotspot
