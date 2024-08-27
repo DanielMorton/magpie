@@ -1,6 +1,6 @@
 [package]
 name = "magpie-bird"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["DanielMorton <dacmorton@gmail.com>"]
 description = "eBird Target Bird Scraper"
 license = "MIT OR Apache-2.0"
