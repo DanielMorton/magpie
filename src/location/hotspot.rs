@@ -16,8 +16,7 @@ pub fn get_hotspots<'a>(
     sub_region: &'a SubRegion,
 ) -> Vec<Hotspot<'a>> {
     let hotspot_url = format!("{}/{}/{}", REGIONS, sub_region.sub_region_code, HOTSPOT);
-    let html = get_html(client, &hotspot_url);
-    html.select(&selectors.leaderboard)
+    get_html(client, &hotspot_url).select(&selectors.leaderboard)
         .next()
         .map(|element| {
             element
