@@ -13,19 +13,21 @@ pub(crate) fn get_html(client: &Client, url: &str) -> Html {
 }
 
 pub(crate) fn parse_row(row: &ElementRef) -> (String, String) {
-    let url = row
-        .value()
-        .attr("href")
-        .unwrap_or_else(|| panic!("No url for row : {:?}", row));
     let name = row
         .value()
         .attr("title")
         .unwrap_or_else(|| panic!("No name for row: {:?}", row))
-        .to_string();
-    let code = match url.split('/').collect::<Vec<_>>().last() {
-        Some(&c) => c.to_owned(),
-        None => panic!("Improperly formatted url for row: {:?}", row),
-    };
+        .to_owned();
+    let code = row
+        .value()
+        .attr("href")
+        .unwrap_or_else(|| panic!("No url for row : {:?}", row))
+        .split('/')
+        .collect::<Vec<_>>()
+        .last()
+        .unwrap_or_else(|| panic!("Improperly formatted url for row: {:?}", row))
+        .to_owned()
+        .to_owned();
     (name, code)
 }
 fn parse_country(row: &ElementRef) -> Country {
