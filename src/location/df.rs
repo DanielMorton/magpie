@@ -4,11 +4,11 @@ use polars::prelude::{DataFrame, NamedFrom, Series};
 pub fn sub_region_to_df(sub_regions: &[SubRegion]) -> DataFrame {
     let sub_region = sub_regions
         .iter()
-        .map(|s| s.sub_region.to_owned())
+        .map(|s| s.sub_region())
         .collect::<Vec<_>>();
     let sub_region_code = sub_regions
         .iter()
-        .map(|s| s.sub_region_code.to_owned())
+        .map(|s| s.sub_region_code())
         .collect::<Vec<_>>();
     let region = sub_regions.iter().map(|r| r.region()).collect::<Vec<_>>();
     let region_code = sub_regions
@@ -36,11 +36,11 @@ pub fn sub_region_to_df(sub_regions: &[SubRegion]) -> DataFrame {
 pub fn hotspot_to_df(hotspots: &[Hotspot]) -> DataFrame {
     let hotspot = hotspots
         .iter()
-        .map(|h| h.hotspot.to_owned())
+        .map(|h| h.hotspot())
         .collect::<Vec<_>>();
     let hotspot_code = hotspots
         .iter()
-        .map(|h| h.hotspot_code.to_owned())
+        .map(|h| h.hotspot_code())
         .collect::<Vec<_>>();
     let sub_region = hotspots.iter().map(|h| h.sub_region()).collect::<Vec<_>>();
     let sub_region_code = hotspots

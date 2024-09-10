@@ -82,8 +82,8 @@ pub fn get_regions<'a>(
         regions
     } else {
         vec![Region::new(
-            country.country.to_owned(),
-            country.country_code.to_owned(),
+            country.country(),
+            country.country_code(),
             country,
         )]
     }
@@ -111,8 +111,8 @@ pub fn get_sub_regions<'a>(
         sub_regions
     } else {
         vec![SubRegion::new(
-            region.region.to_owned(),
-            region.region_code.to_owned(),
+            region.region(),
+            region.region_code(),
             region,
         )]
     }

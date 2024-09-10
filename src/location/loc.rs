@@ -11,6 +11,14 @@ impl Country {
             country_code,
         }
     }
+
+    pub(crate) fn country(&self) -> String {
+        self.country.to_owned()
+    }
+
+    pub(crate) fn country_code(&self) -> String {
+        self.country_code.to_owned()
+    }
 }
 
 #[derive(Hash, Eq, PartialEq, Debug)]
@@ -30,10 +38,17 @@ impl<'a> Region<'a> {
     }
 
     pub(crate) fn country(&self) -> String {
-        self.country.country.to_owned()
+        self.country.country()
     }
     pub(crate) fn country_code(&self) -> String {
-        self.country.country_code.to_owned()
+        self.country.country_code()
+    }
+
+    pub(crate) fn region(&self) -> String {
+        self.region.to_owned()
+    }
+    pub(crate) fn region_code(&self) -> String {
+        self.region_code.to_owned()
     }
 }
 
@@ -60,10 +75,17 @@ impl<'a> SubRegion<'a> {
         self.region.country_code()
     }
     pub(crate) fn region(&self) -> String {
-        self.region.region.to_owned()
+        self.region.region()
     }
     pub(crate) fn region_code(&self) -> String {
-        self.region.region_code.to_owned()
+        self.region.region_code()
+    }
+
+    pub(crate) fn sub_region(&self) -> String {
+        self.sub_region.to_owned()
+    }
+    pub(crate) fn sub_region_code(&self) -> String {
+        self.sub_region_code.to_owned()
     }
 }
 #[derive(Hash, Eq, PartialEq, Debug)]
@@ -92,6 +114,14 @@ impl<'a> Hotspot<'a> {
     pub(crate) fn country_code(&self) -> String {
         self.sub_region.country_code()
     }
+
+    pub(crate) fn hotspot(&self) -> String {
+        self.hotspot.to_owned()
+    }
+
+    pub(crate) fn hotspot_code(&self) -> String {
+        self.hotspot_code.to_owned()
+    }
     pub(crate) fn region(&self) -> String {
         self.sub_region.region()
     }
@@ -99,9 +129,9 @@ impl<'a> Hotspot<'a> {
         self.sub_region.region_code()
     }
     pub(crate) fn sub_region(&self) -> String {
-        self.sub_region.sub_region.to_owned()
+        self.sub_region.sub_region()
     }
     pub(crate) fn sub_region_code(&self) -> String {
-        self.sub_region.sub_region_code.to_owned()
+        self.sub_region.sub_region_code()
     }
 }
