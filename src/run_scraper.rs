@@ -28,7 +28,7 @@ pub(crate) fn run(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
         time_range,
     );
 
-    let mut output = scraper.scrape_pages().expect("Concatenated DataFrame.");
+    let mut output = scraper.scrape_pages()?;
 
     let file = File::create(output_file)?;
     CsvWriter::new(&file)
