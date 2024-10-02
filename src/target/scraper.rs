@@ -200,7 +200,6 @@ impl Scraper {
     */
     pub fn scrape_pages(&self) -> DataFrame {
         let date_query = Arc::new(vec![("t2", self.date_range.to_string())]);
-        let selectors = Arc::new(Selectors::new());
         let loc_query = self.make_loc_payload();
         let loc_vec = self.make_loc_vec();
         let time_query = self.make_time_payload();
@@ -220,8 +219,7 @@ impl Scraper {
             .into_par_iter()
             .progress_with_style(style)
             .map(|((row, loc), time)| {
-                let mut df =
-                    arc_scraper.scrape_page(&selectors, loc, &time, &date_query, MIN_BACKOFF);
+                let mut df = arc_scraper.scrape_page(loc, &time, &date_query, MIN_BACKOFF);
                 add_columns(&mut df, &row, &time);
                 df
             })
@@ -242,7 +240,6 @@ impl Scraper {
      */
     fn scrape_page(
         &self,
-        selectors: &Arc<Selectors>,
         loc: Vec<(String, String)>,
         time: &Vec<(String, u8)>,
         date_query: &Vec<(&str, String)>,
@@ -256,19 +253,13 @@ impl Scraper {
             Err(e) => {
                 println!("{}", e);
                 thread::sleep(Duration::from_secs(sleep));
-                return self.scrape_page(
-                    selectors,
-                    loc,
-                    time,
-                    date_query,
-                    min(2 * sleep, MAX_BACKOFF),
-                );
+                return self.scrape_page(loc, time, date_query, min(2 * sleep, MAX_BACKOFF));
             }
         };
         let (doc_selector, doc_format) = if self.location_level == LocationLevel::Hotspot {
-            (&selectors.hotspot_select, HOTSPOT)
+            (Selectors::hotspot_select(), HOTSPOT)
         } else {
-            (&selectors.region_select, REGION)
+            (Selectors::region_select(), REGION)
         };
         match doc
             .select(doc_selector)
@@ -283,37 +274,31 @@ impl Scraper {
                     empty_table()
                 } else {
                     thread::sleep(Duration::from_secs(sleep));
-                    self.scrape_page(selectors, loc, time, date_query, 2 * sleep)
+                    self.scrape_page(loc, time, date_query, 2 * sleep)
                 };
             }
         }
         let checklists = doc
-            .select(&selectors.checklists)
+            .select(Selectors::checklists())
             .next()
             .and_then(|element| element.text().next())
             .map(|text| text.chars().filter(|c| c.is_numeric()).collect::<String>())
             .and_then(|c| c.parse::<i32>().ok())
             .unwrap_or(0);
         match doc
-            .select(&selectors.species_count)
+            .select(Selectors::species_count())
             .next()
             .and_then(|count| count.text().next())
             .and_then(|count| u32::from_str(count).ok())
         {
             Some(0) => empty_table(),
-            Some(_) => match doc.select(&selectors.native).next() {
-                Some(t) => scrape_table(selectors, t, checklists),
+            Some(_) => match doc.select(Selectors::native()).next() {
+                Some(t) => scrape_table(t, checklists),
                 None => empty_table(),
             },
             None => {
                 thread::sleep(Duration::from_secs(sleep));
-                self.scrape_page(
-                    selectors,
-                    loc,
-                    time,
-                    date_query,
-                    min(2 * sleep, MAX_BACKOFF),
-                )
+                self.scrape_page(loc, time, date_query, min(2 * sleep, MAX_BACKOFF))
             }
         }
     }

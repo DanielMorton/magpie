@@ -34,10 +34,7 @@ pub fn sub_region_to_df(sub_regions: &[SubRegion]) -> DataFrame {
 }
 
 pub fn hotspot_to_df(hotspots: &[Hotspot]) -> DataFrame {
-    let hotspot = hotspots
-        .iter()
-        .map(|h| h.hotspot())
-        .collect::<Vec<_>>();
+    let hotspot = hotspots.iter().map(|h| h.hotspot()).collect::<Vec<_>>();
     let hotspot_code = hotspots
         .iter()
         .map(|h| h.hotspot_code())
