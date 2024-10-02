@@ -1,3 +1,7 @@
+extern crate strum;
+#[macro_use]
+extern crate strum_macros;
+
 mod app;
 mod loc;
 mod location;
@@ -7,19 +11,16 @@ mod run_location;
 mod run_scraper;
 mod target;
 
-extern crate strum;
-#[macro_use]
-extern crate strum_macros;
+use std::error::Error;
 
 use crate::app::AppType;
-use parse::MagpieParse;
+use crate::parse::MagpieParse;
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     let matches = parse::parse();
-    let app = matches.get_app();
-    if app == AppType::Species {
-        run_scraper::run(&matches)
-    } else if app == AppType::Location {
-        run_location::run()
+    match matches.get_app() {
+        AppType::Species => run_scraper::run(&matches),
+        AppType::Location => run_location::run(),
+        _ => Ok(()),
     }
 }

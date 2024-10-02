@@ -1,3 +1,4 @@
+use std::error::Error;
 use crate::location::regions::{get_countries, get_regions, get_sub_regions};
 use crate::location::selectors::Selectors;
 use polars::prelude::{CsvWriter, SerWriter};
@@ -16,7 +17,7 @@ pub fn print_hms(start: &Instant) {
     println!("{:02}:{:02}:{:02}.{}", hour, minute, second, millis % 1000)
 }
 
-pub fn run() {
+pub fn run() -> Result<(), Box<dyn Error>> {
     let client = Client::builder().cookie_store(true).build().unwrap();
     let selectors = Selectors::new();
 
@@ -64,4 +65,5 @@ pub fn run() {
         Ok(_) => (),
         Err(e) => panic!("{:?}", e),
     }
+    Ok(())
 }
