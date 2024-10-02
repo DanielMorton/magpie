@@ -11,7 +11,7 @@ use crate::target::{
 use indicatif::{ParallelProgressIterator, ProgressStyle};
 use itertools::Itertools;
 use polars::functions::concat_df_diagonal;
-use polars::prelude::DataFrame;
+use polars::prelude::{DataFrame, PolarsError};
 use rayon::prelude::*;
 use reqwest::blocking::{Client, Response};
 use scraper::Html;
@@ -198,7 +198,7 @@ impl Scraper {
     Constructs all payloads and scrapes all pages for locations in loc_df. Uses all available cores
     to scrape multiple sites at one time. Returns all output concatenated as a single polars DataFrame.
     */
-    pub fn scrape_pages(&self) -> DataFrame {
+    pub fn scrape_pages(&self) -> Result<DataFrame, PolarsError> {
         let date_query = Arc::new(vec![("t2", self.date_range.to_string())]);
         let loc_query = self.make_loc_payload();
         let loc_vec = self.make_loc_vec();
@@ -219,17 +219,14 @@ impl Scraper {
             .into_par_iter()
             .progress_with_style(style)
             .map(|((row, loc), time)| {
-                let mut df = arc_scraper.scrape_page(loc, &time, &date_query, MIN_BACKOFF);
-                add_columns(&mut df, &row, &time);
+                let mut df = arc_scraper.scrape_page(loc, &time, &date_query, MIN_BACKOFF).expect("Expected single table of data.");
+                let _ = add_columns(&mut df, &row, &time);
                 df
             })
             .collect::<Vec<_>>();
 
         print_hms(&s);
-        match concat_df_diagonal(&output_list) {
-            Ok(df) => df,
-            Err(e) => panic!("{:?}", e),
-        }
+        concat_df_diagonal(&output_list)
     }
 
     /**
@@ -244,7 +241,7 @@ impl Scraper {
         time: &Vec<(String, u8)>,
         date_query: &Vec<(&str, String)>,
         sleep: u64,
-    ) -> DataFrame {
+    ) -> Result<DataFrame, PolarsError> {
         let loc_code = &loc[0].1;
         let response = self.get_response(&loc, time, date_query, sleep);
         let url = response.url().to_string();
