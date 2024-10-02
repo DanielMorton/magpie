@@ -1,20 +1,27 @@
 use std::error::Error;
-use crate::location::regions::{get_countries, get_regions, get_sub_regions};
-use crate::location::selectors::Selectors;
-use polars::prelude::{CsvWriter, SerWriter};
-use rayon::prelude::*;
 use std::fs::File;
 use std::time::Instant;
 
+use polars::prelude::{CsvWriter, SerWriter};
+use rayon::prelude::*;
+use reqwest::blocking::Client;
+
+use crate::location::regions::{get_countries, get_regions, get_sub_regions};
+use crate::location::selectors::Selectors;
 use crate::location::df::{hotspot_to_df, sub_region_to_df};
 use crate::location::hotspot::get_hotspots;
-use reqwest::blocking::Client;
 
 pub fn print_hms(start: &Instant) {
     let millis = start.elapsed().as_millis();
     let seconds = millis / 1000;
     let (hour, minute, second) = (seconds / 3600, (seconds % 3600) / 60, seconds % 60);
-    println!("{:02}:{:02}:{:02}.{}", hour, minute, second, millis % 1000)
+    println!(
+        "Elapsed time: {:02}:{:02}:{:02}.{:03}",
+        hour,
+        minute,
+        second,
+        millis % 1000
+    );
 }
 
 pub fn run() -> Result<(), Box<dyn Error>> {
