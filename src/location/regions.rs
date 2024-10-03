@@ -90,7 +90,7 @@ pub fn get_regions<'a>(client: &Client, country: &'a Country, tries: u64) -> Vec
         }
         None => {
             thread::sleep(Duration::from_secs(tries));
-            get_regions(client, country, tries * 2)
+            get_regions(client, country, tries + 1)
         }
     }
 }
@@ -124,7 +124,7 @@ pub fn get_sub_regions<'a>(client: &Client, region: &'a Region, tries: u64) -> V
         }
         None => {
             thread::sleep(Duration::from_secs(tries));
-            get_sub_regions(client, region, tries * 2)
+            get_sub_regions(client, region, tries + 1)
         }
     }
 }

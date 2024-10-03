@@ -40,7 +40,7 @@ pub fn get_hotspots<'a>(
             .collect::<HashSet<_>>().into_iter().collect(),
         None => {
             thread::sleep(Duration::from_secs(tries));
-            get_hotspots(client, sub_region, tries * 2)
+            get_hotspots(client, sub_region, tries + 1)
         }
     }
 }
