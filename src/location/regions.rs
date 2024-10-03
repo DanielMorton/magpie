@@ -4,6 +4,8 @@ use crate::location::{COUNTRIES, REGIONS, SUBREGIONS};
 use reqwest::blocking::Client;
 use scraper::{ElementRef, Html};
 use std::collections::HashSet;
+use std::thread;
+use std::time::Duration;
 
 pub(crate) fn get_html(client: &Client, url: &str) -> Html {
     match client.get(url).send().and_then(|respone| respone.text()) {
@@ -45,13 +47,13 @@ fn parse_sub_region<'a>(row: &ElementRef, region: &'a Region) -> SubRegion<'a> {
     SubRegion::new(sub_region, sub_region_code, region)
 }
 
-pub fn get_countries(client: &Client) -> Vec<Country> {
+pub fn get_countries(client: &Client, selectors: &Selectors) -> Vec<Country> {
     get_html(client, COUNTRIES)
-        .select(Selectors::leaderboard())
+        .select(&selectors.leaderboard)
         .next()
         .map(|element| {
             element
-                .select(Selectors::a())
+                .select(&selectors.a)
                 .map(|row| parse_country(&row))
                 .collect::<HashSet<_>>()
         })
@@ -62,15 +64,21 @@ pub fn get_countries(client: &Client) -> Vec<Country> {
 
 pub fn get_regions<'a>(
     client: &Client,
+    selectors: &Selectors,
     country: &'a Country,
+    tries: u64,
 ) -> Vec<Region<'a>> {
     let region_url = format!("{}/{}/{}", REGIONS, country.country_code, SUBREGIONS);
-    let regions = get_html(client, &region_url)
-        .select(Selectors::leaderboard())
-        .next()
+    let html = get_html(client, &region_url);
+    let regions_leaderboard = html.select(&selectors.leaderboard).next();
+    if regions_leaderboard.is_none() {
+        thread::sleep(Duration::from_secs(tries));
+        return get_regions(client, selectors, country, tries + 1);
+    }
+    let regions = regions_leaderboard
         .map(|element| {
             element
-                .select(Selectors::a())
+                .select(&selectors.a)
                 .map(|row| parse_region(&row, country))
                 .collect::<HashSet<_>>()
         })
@@ -80,7 +88,6 @@ pub fn get_regions<'a>(
     if !regions.is_empty() {
         regions
     } else {
-        //println!("{}", country.country);
         vec![Region::new(
             country.country(),
             country.country_code(),
@@ -91,15 +98,21 @@ pub fn get_regions<'a>(
 
 pub fn get_sub_regions<'a>(
     client: &Client,
+    selectors: &Selectors,
     region: &'a Region,
+    tries: u64,
 ) -> Vec<SubRegion<'a>> {
     let sub_region_url = format!("{}/{}/{}", REGIONS, region.region_code, SUBREGIONS);
-    let sub_regions = get_html(client, &sub_region_url)
-        .select(Selectors::leaderboard())
-        .next()
+    let html = get_html(client, &sub_region_url);
+    let sub_region_leaderboard = html.select(&selectors.leaderboard).next();
+    if sub_region_leaderboard.is_none() {
+        thread::sleep(Duration::from_secs(tries));
+        return get_sub_regions(client, selectors, region, tries + 1);
+    }
+    let sub_regions = sub_region_leaderboard
         .map(|element| {
             element
-                .select(Selectors::a())
+                .select(&selectors.a)
                 .map(|row| parse_sub_region(&row, region))
                 .collect::<HashSet<_>>()
         })
@@ -109,8 +122,6 @@ pub fn get_sub_regions<'a>(
     if !sub_regions.is_empty() {
         sub_regions
     } else {
-        //println!("{} {}", region.region, region.country());
-        //println!("{}", sub_region_url);
         vec![SubRegion::new(
             region.region(),
             region.region_code(),
