@@ -47,13 +47,13 @@ fn parse_sub_region<'a>(row: &ElementRef, region: &'a Region) -> SubRegion<'a> {
     SubRegion::new(sub_region, sub_region_code, region)
 }
 
-pub fn get_countries(client: &Client, selectors: &Selectors) -> Vec<Country> {
+pub fn get_countries(client: &Client) -> Vec<Country> {
     get_html(client, COUNTRIES)
-        .select(&selectors.leaderboard)
+        .select(Selectors::leaderboard())
         .next()
         .map(|element| {
             element
-                .select(&selectors.a)
+                .select(Selectors::a())
                 .map(|row| parse_country(&row))
                 .collect::<HashSet<_>>()
         })
@@ -64,21 +64,20 @@ pub fn get_countries(client: &Client, selectors: &Selectors) -> Vec<Country> {
 
 pub fn get_regions<'a>(
     client: &Client,
-    selectors: &Selectors,
     country: &'a Country,
     tries: u64,
 ) -> Vec<Region<'a>> {
     let region_url = format!("{}/{}/{}", REGIONS, country.country_code, SUBREGIONS);
     let html = get_html(client, &region_url);
-    let regions_leaderboard = html.select(&selectors.leaderboard).next();
+    let regions_leaderboard = html.select(Selectors::leaderboard()).next();
     if regions_leaderboard.is_none() {
         thread::sleep(Duration::from_secs(tries));
-        return get_regions(client, selectors, country, tries + 1);
+        return get_regions(client, country, tries + 1);
     }
     let regions = regions_leaderboard
         .map(|element| {
             element
-                .select(&selectors.a)
+                .select(Selectors::a())
                 .map(|row| parse_region(&row, country))
                 .collect::<HashSet<_>>()
         })
@@ -98,21 +97,20 @@ pub fn get_regions<'a>(
 
 pub fn get_sub_regions<'a>(
     client: &Client,
-    selectors: &Selectors,
     region: &'a Region,
     tries: u64,
 ) -> Vec<SubRegion<'a>> {
     let sub_region_url = format!("{}/{}/{}", REGIONS, region.region_code, SUBREGIONS);
     let html = get_html(client, &sub_region_url);
-    let sub_region_leaderboard = html.select(&selectors.leaderboard).next();
+    let sub_region_leaderboard = html.select(Selectors::leaderboard()).next();
     if sub_region_leaderboard.is_none() {
         thread::sleep(Duration::from_secs(tries));
-        return get_sub_regions(client, selectors, region, tries + 1);
+        return get_sub_regions(client, region, tries + 1);
     }
     let sub_regions = sub_region_leaderboard
         .map(|element| {
             element
-                .select(&selectors.a)
+                .select(Selectors::a())
                 .map(|row| parse_sub_region(&row, region))
                 .collect::<HashSet<_>>()
         })

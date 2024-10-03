@@ -9,7 +9,6 @@ use reqwest::blocking::Client;
 use crate::location::df::{hotspot_to_df, sub_region_to_df};
 use crate::location::hotspot::get_hotspots;
 use crate::location::regions::{get_countries, get_regions, get_sub_regions};
-use crate::location::selectors::Selectors;
 
 pub fn print_hms(start: &Instant) {
     let millis = start.elapsed().as_millis();
@@ -26,19 +25,18 @@ pub fn print_hms(start: &Instant) {
 
 pub fn run() -> Result<(), Box<dyn Error>> {
     let client = Client::builder().cookie_store(true).build().unwrap();
-    let selectors = Selectors::new();
 
     let mut s = Instant::now();
-    let countries = get_countries(&client, &selectors);
+    let countries = get_countries(&client);
     let regions = countries
         .par_iter()
-        .map(|c| get_regions(&client, &selectors, c, 1))
+        .map(|c| get_regions(&client, c, 1))
         .flatten()
         .collect::<Vec<_>>();
     println!("{}", regions.len());
     let sub_regions = regions
         .par_iter()
-        .map(|r| get_sub_regions(&client, &selectors, r, 1))
+        .map(|r| get_sub_regions(&client, r, 1))
         .flatten()
         .collect::<Vec<_>>();
     println!("{}", sub_regions.len());
@@ -47,7 +45,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     s = Instant::now();
     let hotspots = sub_regions
         .par_iter()
-        .map(|s| get_hotspots(&client, &selectors, s, 1))
+        .map(|s| get_hotspots(&client, s, 1))
         .flatten()
         .collect::<Vec<_>>();
     let mut hotspot_df = hotspot_to_df(&hotspots);
