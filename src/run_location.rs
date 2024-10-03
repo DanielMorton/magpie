@@ -1,24 +1,16 @@
 use std::error::Error;
-use std::fs::File;
 use std::time::Instant;
 
 use indicatif::ParallelProgressIterator;
-use polars::prelude::{CsvWriter, DataFrame, SerWriter};
 use rayon::prelude::*;
 use reqwest::blocking::Client;
 
 use crate::location::df::{hotspot_to_df, sub_region_to_df};
 use crate::location::hotspot::get_hotspots;
 use crate::location::regions::{get_countries, get_regions, get_sub_regions};
-use crate::target::print_hms;
+use crate::target::{print_hms, write_csv};
 
-fn write_csv(df: &mut DataFrame, filename: &str) -> Result<(), Box<dyn Error>> {
-    let file = File::create(filename)?;
-    CsvWriter::new(&file)
-        .include_header(true)
-        .finish(df)
-        .map_err(|e| e.into())
-}
+
 
 pub fn run() -> Result<(), Box<dyn Error>> {
     let client = Client::builder().cookie_store(true).build()?;
