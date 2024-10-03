@@ -1,10 +1,10 @@
-use std::collections::HashSet;
 use crate::location::loc::{Hotspot, SubRegion};
 use crate::location::regions::{get_html, parse_row};
 use crate::location::selectors::Selectors;
 use crate::location::{HOTSPOT, REGIONS};
 use reqwest::blocking::Client;
 use scraper::ElementRef;
+use std::collections::HashSet;
 use std::thread;
 use std::time::Duration;
 
@@ -37,7 +37,9 @@ pub fn get_hotspots<'a>(
         Some(element) => element
             .select(Selectors::a())
             .filter_map(|row| parse_hotspot(&row, sub_region).ok())
-            .collect::<HashSet<_>>().into_iter().collect(),
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect(),
         None => {
             thread::sleep(Duration::from_secs(tries));
             get_hotspots(client, sub_region, tries + 1)

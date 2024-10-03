@@ -76,7 +76,9 @@ pub fn get_regions<'a>(client: &Client, country: &'a Country, tries: u64) -> Vec
             let regions: Vec<_> = element
                 .select(Selectors::a())
                 .filter_map(|row| parse_region(&row, country).ok())
-                .collect::<HashSet<_>>().into_iter().collect();
+                .collect::<HashSet<_>>()
+                .into_iter()
+                .collect();
 
             if !regions.is_empty() {
                 regions
@@ -110,7 +112,9 @@ pub fn get_sub_regions<'a>(client: &Client, region: &'a Region, tries: u64) -> V
             let sub_regions: Vec<_> = element
                 .select(Selectors::a())
                 .filter_map(|row| parse_sub_region(&row, region).ok())
-                .collect::<HashSet<_>>().into_iter().collect();
+                .collect::<HashSet<_>>()
+                .into_iter()
+                .collect();
 
             if !sub_regions.is_empty() {
                 sub_regions

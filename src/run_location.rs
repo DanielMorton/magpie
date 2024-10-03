@@ -3,7 +3,7 @@ use std::fs::File;
 use std::time::Instant;
 
 use indicatif::ParallelProgressIterator;
-use polars::prelude::{CsvWriter, SerWriter, DataFrame};
+use polars::prelude::{CsvWriter, DataFrame, SerWriter};
 use rayon::prelude::*;
 use reqwest::blocking::Client;
 
