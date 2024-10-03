@@ -1,28 +1,34 @@
+use lazy_static::lazy_static;
 use scraper::Selector;
+use std::collections::HashMap;
 
-static A: &str = "a";
+macro_rules! define_selectors {
+    ($($name:ident => $selector:expr),+ $(,)?) => {
+        lazy_static! {
+            pub static ref SELECTORS: HashMap<&'static str, Selector> = {
+                let mut m = HashMap::new();
+                $(
+                    m.insert(stringify!($name), Selector::parse($selector)
+                        .unwrap_or_else(|_| panic!("Failed to parse '{}' selector", stringify!($name))));
+                )+
+                m
+            };
+        }
 
-static LEADERBOARD: &str = r#"div[class="LeaderBoardSection"]"#;
+        pub struct Selectors;
 
-pub struct Selectors {
-    /// Selects HTML tag "a".
-    pub(crate) a: Selector,
-
-    /// Selects the table to scrape.
-    pub(crate) leaderboard: Selector,
+        impl Selectors {
+            $(
+                pub fn $name() -> &'static Selector {
+                    SELECTORS.get(stringify!($name))
+                        .expect(concat!("Selector '", stringify!($name), "' not found"))
+                }
+            )+
+        }
+    };
 }
 
-impl Selectors {
-    pub fn new() -> Self {
-        let a = match Selector::parse(A) {
-            Ok(selector) => selector,
-            Err(e) => panic!("{}", e),
-        };
-
-        let leaderboard = match Selector::parse(LEADERBOARD) {
-            Ok(selector) => selector,
-            Err(e) => panic!("{}", e),
-        };
-        Selectors { a, leaderboard }
-    }
+define_selectors! {
+    a => "a",
+    leaderboard => r#"div[class="LeaderBoardSection"]"#
 }
