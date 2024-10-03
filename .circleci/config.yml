@@ -6,3 +6,9 @@ jobs:
     steps:
       - checkout
       - run: cargo build
+  build:
+    docker:
+      - image: cimg/rust:1.81.0
+    steps:
+      - checkout
+      - run: cargo build
