@@ -1,4 +1,3 @@
-
 /// Enumerates all possible geographic list types.
 ///
 /// - For Hotspot LocationLevel: Only Hotspot and Global are available.

@@ -20,6 +20,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let matches = parse::parse();
     match matches.get_app() {
         AppType::Species => run_scraper::run(&matches),
-        AppType::Location => run_location::run()
+        AppType::Location => run_location::run(),
     }
 }

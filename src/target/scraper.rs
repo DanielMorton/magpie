@@ -55,7 +55,8 @@ impl Scraper {
         } else {
             REGION_COLUMNS
         };
-        let mut loc = self.loc_df
+        let mut loc = self
+            .loc_df
             .columns(loc_vec)
             .expect("Failed to get location columns")
             .iter()
@@ -73,7 +74,8 @@ impl Scraper {
         } else {
             vec![location_level_code, self.list_type.to_string()]
         };
-        let mut col_iters = self.loc_df
+        let mut col_iters = self
+            .loc_df
             .columns(columns)
             .expect("Failed to get columns for payload")
             .iter()
@@ -197,7 +199,8 @@ impl Scraper {
             (Selectors::region_select(), REGION)
         };
 
-        if doc.select(doc_selector)
+        if doc
+            .select(doc_selector)
             .next()
             .and_then(|r| r.value().attr("href"))
             .filter(|&r| r == format!("{}/{}", doc_format, loc_code))
@@ -216,7 +219,13 @@ impl Scraper {
             .select(Selectors::checklists())
             .next()
             .and_then(|element| element.text().next())
-            .and_then(|text| text.chars().filter(|c| c.is_numeric()).collect::<String>().parse().ok())
+            .and_then(|text| {
+                text.chars()
+                    .filter(|c| c.is_numeric())
+                    .collect::<String>()
+                    .parse()
+                    .ok()
+            })
             .unwrap_or(0);
 
         match doc
@@ -226,7 +235,9 @@ impl Scraper {
             .and_then(|count| u32::from_str(count).ok())
         {
             Some(0) => empty_table(),
-            Some(_) => doc.select(Selectors::native()).next()
+            Some(_) => doc
+                .select(Selectors::native())
+                .next()
                 .map_or_else(empty_table, |t| scrape_table(t, checklists)),
             None => {
                 thread::sleep(Duration::from_secs(sleep));

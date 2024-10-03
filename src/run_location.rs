@@ -6,10 +6,10 @@ use polars::prelude::{CsvWriter, SerWriter};
 use rayon::prelude::*;
 use reqwest::blocking::Client;
 
-use crate::location::regions::{get_countries, get_regions, get_sub_regions};
-use crate::location::selectors::Selectors;
 use crate::location::df::{hotspot_to_df, sub_region_to_df};
 use crate::location::hotspot::get_hotspots;
+use crate::location::regions::{get_countries, get_regions, get_sub_regions};
+use crate::location::selectors::Selectors;
 
 pub fn print_hms(start: &Instant) {
     let millis = start.elapsed().as_millis();

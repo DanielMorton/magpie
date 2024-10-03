@@ -1,5 +1,5 @@
-use std::io::{self, Write};
 use std::error::Error;
+use std::io::{self, Write};
 
 use reqwest::blocking::Client;
 use rpassword::prompt_password;

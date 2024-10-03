@@ -1,5 +1,5 @@
-use std::fs::File;
 use std::error::Error;
+use std::fs::File;
 
 use clap::ArgMatches;
 use polars::prelude::*;
@@ -20,12 +20,7 @@ pub(crate) fn run(matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
     let client = login::login()?;
 
     let scraper = Scraper::new(
-        client,
-        date_range,
-        list_level,
-        list_type,
-        loc_df,
-        time_range,
+        client, date_range, list_level, list_type, loc_df, time_range,
     );
 
     let mut output = scraper.scrape_pages()?;
