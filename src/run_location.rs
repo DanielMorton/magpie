@@ -32,20 +32,22 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     let countries = get_countries(&client, &selectors);
     let regions = countries
         .par_iter()
-        .map(|c| get_regions(&client, &selectors, c))
+        .map(|c| get_regions(&client, &selectors, c, 1))
         .flatten()
         .collect::<Vec<_>>();
+    println!("{}", regions.len());
     let sub_regions = regions
         .par_iter()
-        .map(|r| get_sub_regions(&client, &selectors, r))
+        .map(|r| get_sub_regions(&client, &selectors, r, 1))
         .flatten()
         .collect::<Vec<_>>();
+    println!("{}", sub_regions.len());
     let mut sub_region_df = sub_region_to_df(&sub_regions);
     print_hms(&s);
     s = Instant::now();
     let hotspots = sub_regions
         .par_iter()
-        .map(|s| get_hotspots(&client, &selectors, s))
+        .map(|s| get_hotspots(&client, &selectors, s, 1))
         .flatten()
         .collect::<Vec<_>>();
     let mut hotspot_df = hotspot_to_df(&hotspots);
