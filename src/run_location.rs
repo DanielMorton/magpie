@@ -2,75 +2,54 @@ use std::error::Error;
 use std::fs::File;
 use std::time::Instant;
 
-use polars::prelude::{CsvWriter, SerWriter};
+use polars::prelude::{CsvWriter, SerWriter, DataFrame};
 use rayon::prelude::*;
 use reqwest::blocking::Client;
 
 use crate::location::df::{hotspot_to_df, sub_region_to_df};
 use crate::location::hotspot::get_hotspots;
 use crate::location::regions::{get_countries, get_regions, get_sub_regions};
+use crate::target::print_hms;
 
-pub fn print_hms(start: &Instant) {
-    let millis = start.elapsed().as_millis();
-    let seconds = millis / 1000;
-    let (hour, minute, second) = (seconds / 3600, (seconds % 3600) / 60, seconds % 60);
-    println!(
-        "Elapsed time: {:02}:{:02}:{:02}.{:03}",
-        hour,
-        minute,
-        second,
-        millis % 1000
-    );
+fn write_csv(df: &mut DataFrame, filename: &str) -> Result<(), Box<dyn Error>> {
+    let file = File::create(filename)?;
+    CsvWriter::new(&file)
+        .include_header(true)
+        .finish(df)
+        .map_err(|e| e.into())
 }
 
 pub fn run() -> Result<(), Box<dyn Error>> {
-    let client = Client::builder().cookie_store(true).build().unwrap();
+    let client = Client::builder().cookie_store(true).build()?;
 
-    let mut s = Instant::now();
-    let countries = get_countries(&client);
-    let regions = countries
+    let start = Instant::now();
+    let countries = get_countries(&client)?;
+
+    let regions: Vec<_> = countries
         .par_iter()
-        .map(|c| get_regions(&client, c, 1))
-        .flatten()
-        .collect::<Vec<_>>();
-    println!("{}", regions.len());
-    let sub_regions = regions
+        .flat_map(|c| get_regions(&client, c, 1))
+        .collect();
+    println!("Number of regions: {}", regions.len());
+
+    let sub_regions: Vec<_> = regions
         .par_iter()
-        .map(|r| get_sub_regions(&client, r, 1))
-        .flatten()
-        .collect::<Vec<_>>();
-    println!("{}", sub_regions.len());
-    let mut sub_region_df = sub_region_to_df(&sub_regions);
-    print_hms(&s);
-    s = Instant::now();
-    let hotspots = sub_regions
+        .flat_map(|r| get_sub_regions(&client, r, 1))
+        .collect();
+    println!("Number of sub-regions: {}", sub_regions.len());
+
+    let mut sub_region_df = sub_region_to_df(&sub_regions)?;
+    print_hms(&start);
+
+    let hotspot_start = Instant::now();
+    let hotspots: Vec<_> = sub_regions
         .par_iter()
-        .map(|s| get_hotspots(&client, s, 1))
-        .flatten()
-        .collect::<Vec<_>>();
-    let mut hotspot_df = hotspot_to_df(&hotspots);
-    print_hms(&s);
-    let file = match File::create("regions_pl.csv") {
-        Ok(f) => f,
-        Err(e) => panic!("{}", e),
-    };
-    match CsvWriter::new(&file)
-        .include_header(true)
-        .finish(&mut sub_region_df)
-    {
-        Ok(_) => (),
-        Err(e) => panic!("{:?}", e),
-    }
-    let hotspot_file = match File::create("hotspots_pl.csv") {
-        Ok(f) => f,
-        Err(e) => panic!("{}", e),
-    };
-    match CsvWriter::new(&hotspot_file)
-        .include_header(true)
-        .finish(&mut hotspot_df)
-    {
-        Ok(_) => (),
-        Err(e) => panic!("{:?}", e),
-    }
+        .flat_map(|s| get_hotspots(&client, s, 1))
+        .collect();
+    println!("Number of hotspots: {}", hotspots.len());
+    let mut hotspot_df = hotspot_to_df(&hotspots)?;
+    print_hms(&hotspot_start);
+
+    write_csv(&mut sub_region_df, "regions_pl.csv")?;
+    write_csv(&mut hotspot_df, "hotspots_pl.csv")?;
     Ok(())
 }
