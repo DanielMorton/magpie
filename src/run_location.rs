@@ -2,6 +2,7 @@ use std::error::Error;
 use std::fs::File;
 use std::time::Instant;
 
+use indicatif::ParallelProgressIterator;
 use polars::prelude::{CsvWriter, SerWriter, DataFrame};
 use rayon::prelude::*;
 use reqwest::blocking::Client;
@@ -27,12 +28,14 @@ pub fn run() -> Result<(), Box<dyn Error>> {
 
     let regions: Vec<_> = countries
         .par_iter()
+        .progress()
         .flat_map(|c| get_regions(&client, c, 1))
         .collect();
     println!("Number of regions: {}", regions.len());
 
     let sub_regions: Vec<_> = regions
         .par_iter()
+        .progress()
         .flat_map(|r| get_sub_regions(&client, r, 1))
         .collect();
     println!("Number of sub-regions: {}", sub_regions.len());
@@ -43,6 +46,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     let hotspot_start = Instant::now();
     let hotspots: Vec<_> = sub_regions
         .par_iter()
+        .progress()
         .flat_map(|s| get_hotspots(&client, s, 1))
         .collect();
     println!("Number of hotspots: {}", hotspots.len());
