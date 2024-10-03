@@ -45,13 +45,13 @@ fn parse_sub_region<'a>(row: &ElementRef, region: &'a Region) -> SubRegion<'a> {
     SubRegion::new(sub_region, sub_region_code, region)
 }
 
-pub fn get_countries(client: &Client, selectors: &Selectors) -> Vec<Country> {
+pub fn get_countries(client: &Client) -> Vec<Country> {
     get_html(client, COUNTRIES)
-        .select(&selectors.leaderboard)
+        .select(Selectors::leaderboard())
         .next()
         .map(|element| {
             element
-                .select(&selectors.a)
+                .select(Selectors::a())
                 .map(|row| parse_country(&row))
                 .collect::<HashSet<_>>()
         })
@@ -62,16 +62,15 @@ pub fn get_countries(client: &Client, selectors: &Selectors) -> Vec<Country> {
 
 pub fn get_regions<'a>(
     client: &Client,
-    selectors: &Selectors,
     country: &'a Country,
 ) -> Vec<Region<'a>> {
     let region_url = format!("{}/{}/{}", REGIONS, country.country_code, SUBREGIONS);
     let regions = get_html(client, &region_url)
-        .select(&selectors.leaderboard)
+        .select(Selectors::leaderboard())
         .next()
         .map(|element| {
             element
-                .select(&selectors.a)
+                .select(Selectors::a())
                 .map(|row| parse_region(&row, country))
                 .collect::<HashSet<_>>()
         })
@@ -81,6 +80,7 @@ pub fn get_regions<'a>(
     if !regions.is_empty() {
         regions
     } else {
+        //println!("{}", country.country);
         vec![Region::new(
             country.country(),
             country.country_code(),
@@ -91,16 +91,15 @@ pub fn get_regions<'a>(
 
 pub fn get_sub_regions<'a>(
     client: &Client,
-    selectors: &Selectors,
     region: &'a Region,
 ) -> Vec<SubRegion<'a>> {
     let sub_region_url = format!("{}/{}/{}", REGIONS, region.region_code, SUBREGIONS);
     let sub_regions = get_html(client, &sub_region_url)
-        .select(&selectors.leaderboard)
+        .select(Selectors::leaderboard())
         .next()
         .map(|element| {
             element
-                .select(&selectors.a)
+                .select(Selectors::a())
                 .map(|row| parse_sub_region(&row, region))
                 .collect::<HashSet<_>>()
         })
@@ -110,6 +109,8 @@ pub fn get_sub_regions<'a>(
     if !sub_regions.is_empty() {
         sub_regions
     } else {
+        //println!("{} {}", region.region, region.country());
+        //println!("{}", sub_region_url);
         vec![SubRegion::new(
             region.region(),
             region.region_code(),

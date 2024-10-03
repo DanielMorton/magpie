@@ -12,16 +12,15 @@ fn parse_hotspot<'a>(row: &ElementRef, sub_region: &'a SubRegion) -> Hotspot<'a>
 }
 pub fn get_hotspots<'a>(
     client: &Client,
-    selectors: &Selectors,
     sub_region: &'a SubRegion,
 ) -> Vec<Hotspot<'a>> {
     let hotspot_url = format!("{}/{}/{}", REGIONS, sub_region.sub_region_code, HOTSPOT);
     get_html(client, &hotspot_url)
-        .select(&selectors.leaderboard)
+        .select(Selectors::leaderboard())
         .next()
         .map(|element| {
             element
-                .select(&selectors.a)
+                .select(Selectors::a())
                 .map(|row| parse_hotspot(&row, sub_region))
                 .collect::<HashSet<_>>()
         })

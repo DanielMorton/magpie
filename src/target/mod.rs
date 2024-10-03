@@ -7,6 +7,7 @@ mod table;
 mod utils;
 
 pub use scraper::Scraper;
+pub use utils::print_hms;
 
 static BASE_URL: &str = "https://ebird.org/targets";
 static CHECKLISTS: &str = "checklists";
