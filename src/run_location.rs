@@ -10,8 +10,6 @@ use crate::location::hotspot::get_hotspots;
 use crate::location::regions::{get_countries, get_regions, get_sub_regions};
 use crate::target::{print_hms, write_csv};
 
-
-
 pub fn run() -> Result<(), Box<dyn Error>> {
     let client = Client::builder().cookie_store(true).build()?;
 

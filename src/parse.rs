@@ -3,7 +3,7 @@ use crate::target::scrape_params::LocationLevel::{Hotspot, SubRegion};
 use crate::target::scrape_params::{DateRange, ListType, LocationLevel};
 use clap::{arg, value_parser, Arg, ArgGroup, ArgMatches, Command};
 
-static DEFAULT_LOCATION: &str = "regions.csv";
+
 
 pub(crate) fn parse() -> ArgMatches {
     Command::new("magpie")

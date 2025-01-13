@@ -1,7 +1,7 @@
+use polars::prelude::{CsvWriter, DataFrame, SerWriter};
 use std::error::Error;
 use std::fs::File;
 use std::time::Instant;
-use polars::prelude::{CsvWriter, DataFrame, SerWriter};
 
 /// Removes first and last char from a string. Used when quotes are inproperly included in strings.
 pub(super) fn remove_quote(value: &str) -> String {

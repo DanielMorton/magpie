@@ -1,3 +1,5 @@
+mod error;
+mod parse;
 pub mod row;
 pub mod scrape_params;
 mod scrape_table;
@@ -6,6 +8,7 @@ mod selectors;
 mod table;
 mod utils;
 
+pub use parse::SpeciesArgs;
 pub use scraper::Scraper;
 pub use utils::{print_hms, write_csv};
 static BASE_URL: &str = "https://ebird.org/targets";

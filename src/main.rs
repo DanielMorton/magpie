@@ -1,25 +1,37 @@
 extern crate strum;
 #[macro_use]
 extern crate strum_macros;
-
-mod app;
 mod loc;
 mod location;
 mod login;
-mod parse;
 mod run_location;
 mod run_scraper;
 mod target;
 
 use std::error::Error;
 
-use crate::app::AppType;
-use crate::parse::MagpieParse;
+use crate::target::SpeciesArgs;
+use clap::{Parser, Subcommand}; // Added the necessary imports
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    #[command(name = "location")]
+    Location,
+    #[command(name = "species")]
+    Species(SpeciesArgs),
+}
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let matches = parse::parse();
-    match matches.get_app() {
-        AppType::Species => run_scraper::run(&matches),
-        AppType::Location => run_location::run(),
+    let cli = Cli::parse();
+    match cli.command {
+        Commands::Species(args) => run_scraper::run(args),
+        Commands::Location => run_location::run(),
     }
 }
