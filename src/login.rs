@@ -6,7 +6,7 @@ use rpassword::prompt_password;
 use scraper::{Html, Selector};
 
 const LOGIN_URL: &str = "https://secure.birds.cornell.edu/cassso/login";
-const TOKEN_SELECTOR: &str = r#"input[name="lt"]"#;
+const TOKEN_SELECTOR: &str = r#"input[name="execution"]"#;
 
 fn get_token(client: &Client) -> Result<String, Box<dyn Error>> {
     let response = client.get(LOGIN_URL).send()?.text()?;
@@ -34,8 +34,7 @@ pub(crate) fn login() -> Result<Client, Box<dyn Error>> {
     let login_data = [
         ("username", username.trim()),
         ("password", &password),
-        ("lt", &token),
-        ("execution", "e1s1"),
+        ("execution", &token),
         ("_eventId", "submit"),
     ];
 
