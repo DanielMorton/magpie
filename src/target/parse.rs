@@ -2,7 +2,7 @@ use crate::target::error::ParseError;
 use crate::target::error::ParseError::{InvalidDateRange, InvalidTimeRange, MissingOutputFile};
 use crate::target::scrape_params::LocationLevel::{Hotspot, SubRegion};
 use crate::target::scrape_params::{DateRange, ListType, LocationLevel};
-use clap::{ArgGroup, Args, Parser};
+use clap::{Args, Parser};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
