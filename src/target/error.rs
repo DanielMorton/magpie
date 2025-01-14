@@ -1,7 +1,7 @@
 use crate::target::scrape_params::LocationLevel;
-use std::num::ParseIntError;
 use polars::error::ErrString;
 use polars::prelude::PolarsError;
+use std::num::ParseIntError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -46,7 +46,7 @@ impl From<ParseIntError> for ParseError {
 #[derive(Error, Debug)]
 pub enum LocationError {
     #[error("Location Row must have 3 or four elements, {0} provided")]
-    InvalidElementCount(usize)
+    InvalidElementCount(usize),
 }
 
 impl From<LocationError> for PolarsError {

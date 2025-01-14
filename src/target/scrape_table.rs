@@ -33,7 +33,8 @@ fn get_species(row: &ElementRef) -> Result<(String, String), PolarsError> {
 /// Extracts the frequency of sightings as a percentage for species in row.
 /// Returns zero if no percentage provided.
 fn get_percent(row: &ElementRef) -> Result<f32, PolarsError> {
-    Ok(row.select(Selectors::percent())
+    Ok(row
+        .select(Selectors::percent())
         .next()
         .and_then(|p| p.value().attr("title"))
         .and_then(|p| p.split('%').next())

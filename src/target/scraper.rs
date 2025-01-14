@@ -1,4 +1,5 @@
-use crate::target::row::{LocationRow};
+use crate::target::error::LocationError;
+use crate::target::row::LocationRow;
 use crate::target::scrape_params::{DateRange, ListType, LocationLevel};
 use crate::target::scrape_table::scrape_table;
 use crate::target::selectors::Selectors;
@@ -20,7 +21,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
-use crate::target::error::LocationError;
 
 pub struct Scraper {
     client: Client,
@@ -68,7 +68,7 @@ impl Scraper {
             .collect::<Result<Vec<_>, _>>()
     }
 
-    fn make_loc_payload(&self) ->  Result<Vec<Vec<(String, String)>>, PolarsError> {
+    fn make_loc_payload(&self) -> Result<Vec<Vec<(String, String)>>, PolarsError> {
         let location_level_code = self.location_level.to_string();
         let columns = if self.list_type == ListType::Global {
             vec![location_level_code]
@@ -103,8 +103,9 @@ impl Scraper {
         Ok(loc_payload)
     }
 
-    fn make_time_payload(&self) ->Result<Vec<Vec<(String, u8)>>, PolarsError> {
-        Ok(self.time_range
+    fn make_time_payload(&self) -> Result<Vec<Vec<(String, u8)>>, PolarsError> {
+        Ok(self
+            .time_range
             .iter()
             .map(|&(s, e)| vec![("bmo".to_string(), s), ("emo".to_string(), e)])
             .collect())

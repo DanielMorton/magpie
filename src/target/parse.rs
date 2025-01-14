@@ -1,5 +1,8 @@
 use crate::target::error::ParseError;
-use crate::target::error::ParseError::{InvalidBeginMonth, InvalidDateRange, InvalidEndMonth, InvalidLocationType, InvalidMonth, InvalidTimeOption, InvalidTimeRange, MissingOutputFile};
+use crate::target::error::ParseError::{
+    InvalidBeginMonth, InvalidDateRange, InvalidEndMonth, InvalidLocationType, InvalidMonth,
+    InvalidTimeOption, InvalidTimeRange, MissingOutputFile,
+};
 use crate::target::scrape_params::LocationLevel::{Hotspot, SubRegion};
 use crate::target::scrape_params::{DateRange, ListType, LocationLevel};
 use clap::{ArgGroup, Args, Parser};
@@ -180,13 +183,13 @@ impl TimeOptions {
             let start_month = parts[0].parse::<u8>()?;
 
             if !(1..=12).contains(&start_month) {
-                return Err(InvalidBeginMonth(start_month.to_string()))
+                return Err(InvalidBeginMonth(start_month.to_string()));
             }
 
             let end_month = parts[1].parse::<u8>()?;
 
             if !(1..=12).contains(&end_month) {
-                return Err(InvalidEndMonth(end_month.to_string()))
+                return Err(InvalidEndMonth(end_month.to_string()));
             }
 
             return Ok(vec![(start_month, end_month)]);
@@ -213,8 +216,7 @@ struct LocationOptions {
 
 impl LocationOptions {
     fn get_loc_data(&self) -> Result<(&str, LocationLevel), ParseError> {
-        self
-            .hotspot
+        self.hotspot
             .as_ref()
             .map(|f| (f.as_str(), Hotspot))
             .or_else(|| self.subregion.as_ref().map(|f| (f.as_str(), SubRegion)))

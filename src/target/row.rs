@@ -1,6 +1,6 @@
+use crate::target::error::LocationError;
 use crate::target::utils::remove_quote;
 use polars::series::SeriesIter;
-use crate::target::error::LocationError;
 
 /// Struct containing location information of regions to be scraped.
 ///
@@ -28,15 +28,15 @@ impl LocationRow {
             3 => Ok(Self::new_location(
                 remove_quote(&loc[0].next().unwrap().to_string()),
                 remove_quote(&loc[1].next().unwrap().to_string()),
-                remove_quote(&loc[2].next().unwrap().to_string())),
-            ),
+                remove_quote(&loc[2].next().unwrap().to_string()),
+            )),
             4 => Ok(Self::new_hotspot(
                 remove_quote(&loc[0].next().unwrap().to_string()),
                 remove_quote(&loc[1].next().unwrap().to_string()),
                 remove_quote(&loc[2].next().unwrap().to_string()),
-                remove_quote(&loc[3].next().unwrap().to_string())),
-            ),
-            n => Err(LocationError::InvalidElementCount(n))
+                remove_quote(&loc[3].next().unwrap().to_string()),
+            )),
+            n => Err(LocationError::InvalidElementCount(n)),
         }
     }
 
