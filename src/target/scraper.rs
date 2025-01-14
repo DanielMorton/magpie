@@ -1,4 +1,4 @@
-use crate::target::row::LocationRow;
+use crate::target::row::{LocationRow};
 use crate::target::scrape_params::{DateRange, ListType, LocationLevel};
 use crate::target::scrape_table::scrape_table;
 use crate::target::selectors::Selectors;
@@ -20,6 +20,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
+use crate::target::error::LocationError;
 
 pub struct Scraper {
     client: Client,
@@ -49,7 +50,7 @@ impl Scraper {
         }
     }
 
-    fn make_loc_vec(&self) -> Vec<LocationRow> {
+    fn make_loc_vec(&self) -> Result<Vec<LocationRow>, LocationError> {
         let loc_vec = if self.location_level == LocationLevel::Hotspot {
             HOTSPOT_COLUMNS
         } else {
@@ -64,10 +65,10 @@ impl Scraper {
             .collect::<Vec<_>>();
         (0..self.loc_df.shape().0)
             .map(|_| LocationRow::new(&mut loc))
-            .collect()
+            .collect::<Result<Vec<_>, _>>()
     }
 
-    fn make_loc_payload(&self) -> Vec<Vec<(String, String)>> {
+    fn make_loc_payload(&self) ->  Result<Vec<Vec<(String, String)>>, PolarsError> {
         let location_level_code = self.location_level.to_string();
         let columns = if self.list_type == ListType::Global {
             vec![location_level_code]
@@ -76,8 +77,7 @@ impl Scraper {
         };
         let mut col_iters = self
             .loc_df
-            .columns(columns)
-            .expect("Failed to get columns for payload")
+            .columns(columns)?
             .iter()
             .map(|&s| s.iter())
             .collect::<Vec<_>>();
@@ -100,14 +100,14 @@ impl Scraper {
                 payload.push(("r2".to_string(), "world".to_string()));
             });
         }
-        loc_payload
+        Ok(loc_payload)
     }
 
-    fn make_time_payload(&self) -> Vec<Vec<(String, u8)>> {
-        self.time_range
+    fn make_time_payload(&self) ->Result<Vec<Vec<(String, u8)>>, PolarsError> {
+        Ok(self.time_range
             .iter()
             .map(|&(s, e)| vec![("bmo".to_string(), s), ("emo".to_string(), e)])
-            .collect()
+            .collect())
     }
 
     fn get_response(
@@ -143,9 +143,9 @@ impl Scraper {
 
     pub fn scrape_pages(&self) -> Result<DataFrame, PolarsError> {
         let date_query = Arc::new(vec![("t2", self.date_range.to_string())]);
-        let loc_query = self.make_loc_payload();
-        let loc_vec = self.make_loc_vec();
-        let time_query = self.make_time_payload();
+        let loc_query = self.make_loc_payload()?;
+        let loc_vec = self.make_loc_vec()?;
+        let time_query = self.make_time_payload()?;
         let arc_scraper = Arc::new(self);
 
         let payloads: Vec<_> = loc_vec

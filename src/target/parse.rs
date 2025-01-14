@@ -1,5 +1,5 @@
 use crate::target::error::ParseError;
-use crate::target::error::ParseError::{InvalidDateRange, InvalidTimeRange, MissingOutputFile};
+use crate::target::error::ParseError::{InvalidBeginMonth, InvalidDateRange, InvalidEndMonth, InvalidLocationType, InvalidMonth, InvalidTimeOption, InvalidTimeRange, MissingOutputFile};
 use crate::target::scrape_params::LocationLevel::{Hotspot, SubRegion};
 use crate::target::scrape_params::{DateRange, ListType, LocationLevel};
 use clap::{ArgGroup, Args, Parser};
@@ -166,7 +166,7 @@ impl TimeOptions {
 
         if let Some(month) = self.month {
             if !(1..=12).contains(&month) {
-                return Err(InvalidTimeRange);
+                return Err(InvalidMonth(month));
             }
             return Ok(vec![(month, month)]);
         }
@@ -174,24 +174,24 @@ impl TimeOptions {
         if let Some(range) = &self.range {
             let parts: Vec<&str> = range.split('-').collect();
             if parts.len() != 2 {
-                return Err(InvalidTimeRange);
+                return Err(InvalidTimeRange(range.to_owned()));
             }
 
             let start_month = parts[0].parse::<u8>()?;
-            let end_month = parts[1].parse::<u8>()?;
 
-            if !((1..=12).contains(&start_month) || !(1..=12).contains(&end_month)) {
-                return Err(InvalidTimeRange);
+            if !(1..=12).contains(&start_month) {
+                return Err(InvalidBeginMonth(start_month.to_string()))
             }
 
-            if end_month < start_month {
-                return Err(InvalidTimeRange);
+            let end_month = parts[1].parse::<u8>()?;
+
+            if !(1..=12).contains(&end_month) {
+                return Err(InvalidEndMonth(end_month.to_string()))
             }
 
             return Ok(vec![(start_month, end_month)]);
         }
-
-        Err(InvalidTimeRange)
+        Err(InvalidTimeOption)
     }
 }
 
@@ -213,11 +213,11 @@ struct LocationOptions {
 
 impl LocationOptions {
     fn get_loc_data(&self) -> Result<(&str, LocationLevel), ParseError> {
-        Ok(self
+        self
             .hotspot
             .as_ref()
             .map(|f| (f.as_str(), Hotspot))
             .or_else(|| self.subregion.as_ref().map(|f| (f.as_str(), SubRegion)))
-            .unwrap())
+            .ok_or(InvalidLocationType)
     }
 }

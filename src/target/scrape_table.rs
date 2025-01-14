@@ -5,40 +5,40 @@ use polars::prelude::*;
 use scraper::ElementRef;
 
 /// Extracts common name for species in row.
-fn get_common_name(species: &Option<ElementRef>) -> String {
-    species
+fn get_common_name(species: &Option<ElementRef>) -> Result<String, PolarsError> {
+    Ok(species
         .and_then(|s| s.text().next())
         .map(|s| s.trim().to_owned())
-        .unwrap_or_default()
+        .unwrap_or_default())
 }
 
 /// Extracts scientific name for species in row.
-fn get_scientific_name(species: &Option<ElementRef>) -> String {
-    species
+fn get_scientific_name(species: &Option<ElementRef>) -> Result<String, PolarsError> {
+    Ok(species
         .and_then(|s| s.select(Selectors::sci_name()).next())
         .and_then(|s| s.text().next())
         .map(|s| s.trim().to_owned())
-        .unwrap_or_default()
+        .unwrap_or_default())
 }
 
 /// Extracts common name and scientific name for species in row.
-fn get_species(row: &ElementRef) -> (String, String) {
+fn get_species(row: &ElementRef) -> Result<(String, String), PolarsError> {
     let species = row
         .select(Selectors::species())
         .next()
         .and_then(|s| s.select(Selectors::a()).next());
-    (get_common_name(&species), get_scientific_name(&species))
+    Ok((get_common_name(&species)?, get_scientific_name(&species)?))
 }
 
 /// Extracts the frequency of sightings as a percentage for species in row.
 /// Returns zero if no percentage provided.
-fn get_percent(row: &ElementRef) -> f32 {
-    row.select(Selectors::percent())
+fn get_percent(row: &ElementRef) -> Result<f32, PolarsError> {
+    Ok(row.select(Selectors::percent())
         .next()
         .and_then(|p| p.value().attr("title"))
         .and_then(|p| p.split('%').next())
         .and_then(|p| p.parse::<f32>().ok())
-        .unwrap_or(0.0)
+        .unwrap_or(0.0))
 }
 
 /// Extracts species data from the table of all target species for a given location.
@@ -50,8 +50,8 @@ pub(super) fn scrape_table(table: ElementRef, checklists: i32) -> Result<DataFra
     let df_rows: Result<Vec<DataFrame>, PolarsError> = table
         .select(Selectors::rows())
         .map(|row| {
-            let (common_name, scientific_name) = get_species(&row);
-            let percent = get_percent(&row);
+            let (common_name, scientific_name) = get_species(&row)?;
+            let percent = get_percent(&row)?;
             df!(
                 COMMON_NAME => [common_name],
                 SCIENTIFIC_NAME => [scientific_name],
