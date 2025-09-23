@@ -12,19 +12,18 @@ exclude = [
 ]
 
 [dependencies]
-clap = { version = "4.5.26", features = ["derive"] }
+clap = { version = "4.5.48", features = ["derive"] }
 itertools = "0.14.0"
 lazy_static = "1.5.0"
-num_cpus = "1.16.0"
-rayon = "1.10.0"
-rpassword = "7.3.1"
-scraper = "0.22.0"
-strum = "0.26.3"
-strum_macros = "0.26.4"
-thiserror = "2.0.11"
+rayon = "1.11.0"
+rpassword = "7.4.0"
+scraper = "0.24.0"
+strum = "0.27.2"
+strum_macros = "0.27.2"
+thiserror = "2.0.16"
 
 [dependencies.indicatif]
-version = "0.17.9"
+version = "0.18.0"
 features = ["rayon"]
 
 [dependencies.polars]
@@ -32,5 +31,5 @@ version = "0.42.0"
 features = ["diagonal_concat", "lazy", "temporal"]
 
 [dependencies.reqwest]
-version = "0.12.12"
+version = "0.12.23"
 features = ["blocking", "cookies", "json"]
