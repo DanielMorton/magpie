@@ -3,7 +3,7 @@
 
 # Magpie
 Magpie is a tool for scraping target bird species from eBird. Any hotspot
-or geographic region has a "Target Species" feature. This feature all the
+or geographic region has a "Target Species" feature. This features all the
 species found at that location that the user has not already seen in some
 specified time period and geographic range. The most general form would
 be:
