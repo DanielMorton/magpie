@@ -58,10 +58,10 @@ impl Scraper {
         };
         let mut loc = self
             .loc_df
-            .columns(loc_vec)
+            .select(loc_vec)
             .expect("Failed to get location columns")
-            .iter()
-            .map(|&s| s.iter())
+            .columns()
+            .into_iter()
             .collect::<Vec<_>>();
         (0..self.loc_df.shape().0)
             .map(|_| LocationRow::new(&mut loc))

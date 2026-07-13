@@ -62,6 +62,6 @@ pub(super) fn scrape_table(table: ElementRef, checklists: i32) -> Result<DataFra
         .collect();
 
     let mut df = concat_df_diagonal(&df_rows?)?;
-    df.with_column(Series::new(CHECKLISTS, vec![checklists; df.height()]))?;
+    df.with_column(Series::new(CHECKLISTS.into(), vec![checklists; df.height()]).into())?;
     Ok(df)
 }
