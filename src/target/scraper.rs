@@ -62,6 +62,7 @@ impl Scraper {
             .expect("Failed to get location columns")
             .columns()
             .into_iter()
+            .map(|&s| s.into_materialized_series())
             .collect::<Vec<_>>();
         (0..self.loc_df.shape().0)
             .map(|_| LocationRow::new(&mut loc))
