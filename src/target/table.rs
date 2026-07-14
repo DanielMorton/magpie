@@ -20,24 +20,25 @@ pub(super) fn add_columns(
     ];
 
     for (name, value) in constant_columns {
-        df.with_column(Series::new(name, vec![value; size]))?;
+        df.with_column(Series::new(name.into(), vec![value; size]).into())?;
     }
 
     if let Some(hotspot) = row.hotspot() {
-        df.with_column(Series::new(HOTSPOT, vec![hotspot; size]))?;
+        df.with_column(Series::new(HOTSPOT.into(), vec![hotspot; size]).into())?;
     }
 
-    df.with_column(Series::new(START_MONTH, vec![time[0].1 as u32; size]))?;
-    df.with_column(Series::new(END_MONTH, vec![time[1].1 as u32; size]))?;
+    df.with_column(Series::new(START_MONTH.into(), vec![time[0].1 as u32; size]).into())?;
+    df.with_column(Series::new(END_MONTH.into(), vec![time[1].1 as u32; size]).into())?;
 
     Ok(())
 }
 
 /// In cases where there is no data to return, returns an empty table.
 pub(super) fn empty_table() -> Result<DataFrame, PolarsError> {
-    DataFrame::new(vec![
-        Series::new(COMMON_NAME, Vec::<String>::new()),
-        Series::new(SCIENTIFIC_NAME, Vec::<String>::new()),
-        Series::new(PERCENT, Vec::<f32>::new()),
-    ])
+    let columns = vec![
+        Series::new(COMMON_NAME.into(), Vec::<String>::new()).into(),
+        Series::new(SCIENTIFIC_NAME.into(), Vec::<String>::new()).into(),
+        Series::new(PERCENT.into(), Vec::<f32>::new()).into(),
+    ];
+    DataFrame::new(0, columns)
 }

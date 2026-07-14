@@ -56,13 +56,14 @@ impl Scraper {
         } else {
             REGION_COLUMNS
         };
-        let mut loc = self
+        let selected = self
             .loc_df
             .select(loc_vec)
-            .expect("Failed to get location columns")
+            .expect("Failed to get location columns");
+        let mut loc = selected
             .columns()
-            .into_iter()
-            .map(|&s| s.into_materialized_series())
+            .iter()
+            .map(|col| col.as_materialized_series().iter())
             .collect::<Vec<_>>();
         (0..self.loc_df.shape().0)
             .map(|_| LocationRow::new(&mut loc))
@@ -76,11 +77,11 @@ impl Scraper {
         } else {
             vec![location_level_code, self.list_type.to_string()]
         };
-        let mut col_iters = self
-            .loc_df
-            .columns(columns)?
+        let selected = self.loc_df.select(columns)?;
+        let mut col_iters = selected
+            .columns()
             .iter()
-            .map(|&s| s.iter())
+            .map(|col| col.as_materialized_series().iter())
             .collect::<Vec<_>>();
 
         let mut loc_payload: Vec<Vec<(String, String)>> = (0..self.loc_df.shape().0)
