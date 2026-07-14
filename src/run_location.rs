@@ -43,7 +43,7 @@ pub fn run() -> Result<(), Box<dyn Error>> {
     let mut hotspot_df = hotspot_to_df(&hotspots)?;
     print_hms(&hotspot_start);
 
-    write_csv(&mut sub_region_df, "regions_pl.csv")?;
-    write_csv(&mut hotspot_df, "hotspots_pl.csv")?;
+    write_csv(&mut sub_region_df, "regions26.csv")?;
+    write_csv(&mut hotspot_df, "hotspots26.csv")?;
     Ok(())
 }
