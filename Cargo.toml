@@ -28,7 +28,7 @@ features = ["rayon"]
 
 [dependencies.polars]
 version = "0.54.4"
-features = ["diagonal_concat", "lazy"]
+features = ["diagonal_concat", "lazy", "strings"]
 
 [dependencies.reqwest]
 version = "0.13.4"
