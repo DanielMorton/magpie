@@ -1,14 +1,28 @@
-version: 2.2
+version: 2.1
 jobs:
   build:
+    parameters:
+      rust-image:
+        type: string
     docker:
-      - image: cimg/rust:1.80.1
+      - image: cimg/rust:<< parameters.rust-image >>
     steps:
       - checkout
-      - run: cargo build
-  build:
-    docker:
-      - image: cimg/rust:1.81.0
-    steps:
-      - checkout
-      - run: cargo build
+      - restore_cache:
+          keys:
+            - cargo-cache-{{ checksum "Cargo.lock" }}
+      - run: cargo build --all-targets
+      - run: cargo test
+      - save_cache:
+          key: cargo-cache-{{ checksum "Cargo.lock" }}
+          paths:
+            - ~/.cargo/registry
+            - target
+
+workflows:
+  build-and-test:
+    jobs:
+      - build:
+          matrix:
+            parameters:
+              rust-image: ["1.96.0", "1.97.0"]
