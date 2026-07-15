@@ -18,7 +18,7 @@ pub enum ParseError {
     #[error("End Month must be between 1 and 12. {0} provided")]
     InvalidEndMonth(String),
 
-    #[error(" Month must be between 1 and 12. {0} provided")]
+    #[error("Month must be between 1 and 12. {0} provided")]
     InvalidMonth(u8),
 
     #[error("Month must be between 1 and 12.")]
@@ -45,7 +45,7 @@ impl From<ParseIntError> for ParseError {
 
 #[derive(Error, Debug)]
 pub enum LocationError {
-    #[error("Location Row must have 3 or four elements, {0} provided")]
+    #[error("Location Row must have 3 or 4 elements, {0} provided")]
     InvalidElementCount(usize),
 }
 

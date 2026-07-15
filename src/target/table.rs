@@ -3,33 +3,33 @@ use crate::target::{
     COMMON_NAME, COUNTRY, END_MONTH, HOTSPOT, PERCENT, REGION, SCIENTIFIC_NAME, START_MONTH,
     SUB_REGION,
 };
-use polars::prelude::{DataFrame, NamedFrom, PolarsError, Series};
+use polars::prelude::{Column, DataFrame, NamedFrom, PolarsError, Series};
 
 /// Adds columns that are constant for each scraped page. These columns are the location information:
 /// sub-region, region, country, hotspot (if applicable), and the start and end months.
+///
+/// All columns are built up front and appended in a single `hstack_mut` call rather than one
+/// `with_column` call per column, since each `with_column` re-validates the whole frame.
 pub(super) fn add_columns(
     df: &mut DataFrame,
     row: &LocationRow,
     time: &[(String, u8)],
 ) -> Result<(), PolarsError> {
     let size = df.height();
-    let constant_columns = [
-        (SUB_REGION, row.sub_region()),
-        (REGION, row.region()),
-        (COUNTRY, row.country()),
+
+    let mut new_columns: Vec<Column> = vec![
+        Series::new(SUB_REGION.into(), vec![row.sub_region(); size]).into(),
+        Series::new(REGION.into(), vec![row.region(); size]).into(),
+        Series::new(COUNTRY.into(), vec![row.country(); size]).into(),
+        Series::new(START_MONTH.into(), vec![time[0].1 as u32; size]).into(),
+        Series::new(END_MONTH.into(), vec![time[1].1 as u32; size]).into(),
     ];
 
-    for (name, value) in constant_columns {
-        df.with_column(Series::new(name.into(), vec![value; size]).into())?;
-    }
-
     if let Some(hotspot) = row.hotspot() {
-        df.with_column(Series::new(HOTSPOT.into(), vec![hotspot; size]).into())?;
+        new_columns.push(Series::new(HOTSPOT.into(), vec![hotspot; size]).into());
     }
 
-    df.with_column(Series::new(START_MONTH.into(), vec![time[0].1 as u32; size]).into())?;
-    df.with_column(Series::new(END_MONTH.into(), vec![time[1].1 as u32; size]).into())?;
-
+    df.hstack_mut(&new_columns)?;
     Ok(())
 }
 

@@ -24,17 +24,26 @@ pub struct LocationRow {
 impl LocationRow {
     /// Creates LocationRow from a vector of data extracted from a DataFrame row.
     pub(super) fn new(loc: &mut [SeriesIter]) -> Result<Self, LocationError> {
+        fn next_value(iter: &mut SeriesIter) -> String {
+            remove_quote(
+                &iter
+                    .next()
+                    .expect("SeriesIter should yield one value per DataFrame row")
+                    .to_string(),
+            )
+        }
+
         match loc.len() {
             3 => Ok(Self::new_location(
-                remove_quote(&loc[0].next().unwrap().to_string()),
-                remove_quote(&loc[1].next().unwrap().to_string()),
-                remove_quote(&loc[2].next().unwrap().to_string()),
+                next_value(&mut loc[0]),
+                next_value(&mut loc[1]),
+                next_value(&mut loc[2]),
             )),
             4 => Ok(Self::new_hotspot(
-                remove_quote(&loc[0].next().unwrap().to_string()),
-                remove_quote(&loc[1].next().unwrap().to_string()),
-                remove_quote(&loc[2].next().unwrap().to_string()),
-                remove_quote(&loc[3].next().unwrap().to_string()),
+                next_value(&mut loc[0]),
+                next_value(&mut loc[1]),
+                next_value(&mut loc[2]),
+                next_value(&mut loc[3]),
             )),
             n => Err(LocationError::InvalidElementCount(n)),
         }

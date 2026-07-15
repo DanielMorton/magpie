@@ -6,6 +6,7 @@ mod location;
 mod login;
 mod run_location;
 mod run_scraper;
+mod selector_macro;
 mod target;
 
 use std::error::Error;

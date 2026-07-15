@@ -3,12 +3,21 @@ use std::error::Error;
 use std::fs::File;
 use std::time::Instant;
 
-/// Removes first and last char from a string. Used when quotes are inproperly included in strings.
+/// Strips a single matching pair of surrounding quote characters (`"` or `'`) from `value`,
+/// if present. Values that aren't quoted (or use mismatched quote characters) are returned
+/// unchanged, so this never silently truncates legitimate, unquoted data.
 pub(super) fn remove_quote(value: &str) -> String {
-    let mut chars = value.chars();
-    chars.next();
-    chars.next_back();
-    chars.as_str().to_string()
+    let trimmed = value.trim();
+    let bytes = trimmed.as_bytes();
+
+    if let (Some(&first), Some(&last)) = (bytes.first(), bytes.last()) {
+        let is_quote = |b: u8| b == b'"' || b == b'\'';
+        if bytes.len() >= 2 && first == last && is_quote(first) {
+            return trimmed[1..trimmed.len() - 1].to_string();
+        }
+    }
+
+    trimmed.to_string()
 }
 
 /// Prints the run time of a procedure in human readable format.
@@ -31,4 +40,39 @@ pub fn write_csv(df: &mut DataFrame, filename: &str) -> Result<(), Box<dyn Error
         .include_header(true)
         .finish(df)
         .map_err(|e| e.into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::remove_quote;
+
+    #[test]
+    fn strips_matching_double_quotes() {
+        assert_eq!(remove_quote("\"California\""), "California");
+    }
+
+    #[test]
+    fn strips_matching_single_quotes() {
+        assert_eq!(remove_quote("'California'"), "California");
+    }
+
+    #[test]
+    fn leaves_unquoted_values_untouched() {
+        assert_eq!(remove_quote("California"), "California");
+    }
+
+    #[test]
+    fn leaves_mismatched_quotes_untouched() {
+        assert_eq!(remove_quote("\"California'"), "\"California'");
+    }
+
+    #[test]
+    fn leaves_single_char_untouched() {
+        assert_eq!(remove_quote("A"), "A");
+    }
+
+    #[test]
+    fn leaves_empty_string_untouched() {
+        assert_eq!(remove_quote(""), "");
+    }
 }
