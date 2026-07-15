@@ -28,8 +28,8 @@ features = ["rayon"]
 
 [dependencies.polars]
 version = "0.54.4"
-features = ["diagonal_concat", "lazy", "temporal", "strings"]
+features = ["diagonal_concat", "lazy"]
 
 [dependencies.reqwest]
 version = "0.13.4"
-features = ["blocking", "cookies", "json", "query", "form"]
+features = ["blocking", "cookies", "query", "form"]
