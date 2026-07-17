@@ -1,7 +1,7 @@
-use crate::selectors;
 use crate::error::Result;
+use crate::selectors;
 use polars::functions::concat_df_diagonal;
-use polars::prelude::{DataFrame, Series};
+use polars::prelude::{Column, DataFrame, NamedFrom, Series};
 use scraper::ElementRef;
 
 fn get_common_name(species: Option<&scraper::ElementRef>) -> String {
@@ -38,15 +38,16 @@ pub fn scrape_table(table: ElementRef, checklists: i32) -> Result<DataFrame> {
         .map(|row| {
             let (common, scientific) = get_species(&row)?;
             let percent = get_percent(&row);
-            DataFrame::new(vec![
-                Series::new("common name".into(), vec![common]),
-                Series::new("scientific name".into(), vec![scientific]),
-                Series::new("percent".into(), vec![percent]),
-            ]).map_err(Into::into)
+            DataFrame::new(1, vec![
+                Column::from(Series::new("common name".into(), vec![common])),
+                Column::from(Series::new("scientific name".into(), vec![scientific])),
+                Column::from(Series::new("percent".into(), vec![percent])),
+            ])
+                .map_err(Into::into)
         })
         .collect();
 
     let mut df = concat_df_diagonal(&rows?)?;
-    df.with_column(Series::new("checklists".into(), vec![checklists; df.height()]))?;
+    df.with_column(Column::from(Series::new("checklists".into(), vec![checklists; df.height()])))?;
     Ok(df)
 }

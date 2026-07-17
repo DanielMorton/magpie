@@ -4,17 +4,16 @@ use crate::target::row::LocationRow;
 use crate::target::scrape_params::{DateRange, ListType, LocationLevel};
 use crate::target::table::{add_columns, empty_table};
 use crate::utils::print_elapsed;
-use futures::future;
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use indicatif::{MultiProgress, ParallelProgressIterator, ProgressBar, ProgressStyle};
 use itertools::Itertools;
 use polars::functions::concat_df_diagonal;
 use polars::prelude::DataFrame;
-use reqwest::Client;
+use rayon::prelude::*;
+use reqwest::blocking::Client;
 use scraper::Html;
 use std::cmp::min;
-use std::sync::Arc;
+use std::thread;
 use std::time::{Duration, Instant};
-use tokio::time::sleep;
 use tracing::warn;
 
 const BASE_URL: &str = "https://ebird.org/targets";
@@ -22,7 +21,6 @@ const HOME_URL: &str = "https://ebird.org/home";
 const LOGIN_URL: &str = "https://secure.birds.cornell.edu/cassso/login";
 const MAX_BACKOFF_SECS: u64 = 100;
 const MIN_BACKOFF_SECS: u64 = 5;
-const CONCURRENT_REQUESTS: usize = 50;
 
 pub struct Scraper {
     client: Client,
@@ -93,45 +91,44 @@ impl Scraper {
         Ok(payloads)
     }
 
-    async fn fetch_with_backoff(
+    fn fetch_with_backoff(
         &self,
         loc: &[(String, String)],
         time: &[(String, u8)],
         date_query: &[(&str, String)],
         sleep_secs: u64,
-    ) -> Result<reqwest::Response> {
+    ) -> Result<reqwest::blocking::Response> {
         let response = self.client
             .get(BASE_URL)
             .query(loc)
             .query(time)
             .query(date_query)
-            .send()
-            .await?;
+            .send()?;
 
         let url = response.url().to_string();
         if url.contains(LOGIN_URL) || url.contains(HOME_URL) {
             if sleep_secs >= MAX_BACKOFF_SECS {
                 return Err(AppError::MaxRetries(url));
             }
-            sleep(Duration::from_secs(sleep_secs)).await;
-            Box::pin(self.fetch_with_backoff(loc, time, date_query, min(sleep_secs * 2, MAX_BACKOFF_SECS))).await
+            thread::sleep(Duration::from_secs(sleep_secs));
+            self.fetch_with_backoff(loc, time, date_query, min(sleep_secs * 2, MAX_BACKOFF_SECS))
         } else {
             Ok(response)
         }
     }
 
-    async fn scrape_single(
+    fn scrape_single(
         &self,
-        row: LocationRow,
+        _row: LocationRow,
         loc: Vec<(String, String)>,
         time: Vec<(String, u8)>,
     ) -> Result<DataFrame> {
         let loc_code = loc[0].1.clone();
         let date_query = vec![("t2", self.date_range.to_string())];
 
-        let response = self.fetch_with_backoff(&loc, &time, &date_query, MIN_BACKOFF_SECS).await?;
+        let response = self.fetch_with_backoff(&loc, &time, &date_query, MIN_BACKOFF_SECS)?;
         let url = response.url().to_string();
-        let text = response.text().await?;
+        let text = response.text()?;
         let doc = Html::parse_document(&text);
 
         let (selector, format) = match self.location_level {
@@ -171,7 +168,7 @@ impl Scraper {
         }
     }
 
-    pub async fn scrape_all(&self) -> Result<DataFrame> {
+    pub fn scrape_all(&self) -> Result<DataFrame> {
         let start = Instant::now();
         let loc_rows = self.make_loc_rows()?;
         let loc_payloads = self.make_loc_payloads()?;
@@ -193,40 +190,26 @@ impl Scraper {
         );
         pb.set_message("Scraping");
 
-        let scraper = Arc::new(self);
-        let pb = Arc::new(pb);
-        let mut all_dfs = Vec::with_capacity(total);
-
-        for chunk in items.chunks(CONCURRENT_REQUESTS) {
-            let futures: Vec<_> = chunk.iter()
-                .map(|((row, loc), time)| {
-                    let s = scraper.clone();
-                    let pb = pb.clone();
-                    let row = row.clone();
-                    let loc = loc.clone();
-                    let time = time.clone();
-                    async move {
-                        let result = s.scrape_single(row.clone(), loc, time.clone()).await;
-                        pb.inc(1);
-                        (row, time, result)
-                    }
-                })
-                .collect();
-
-            let results = future::join_all(futures).await;
-
-            for (row, time, result) in results {
-                match result {
+        let all_dfs: Vec<_> = items
+            .into_par_iter()
+            .progress_with(pb.clone())
+            .filter_map(|((row, loc), time)| {
+                match self.scrape_single(row.clone(), loc, time.clone()) {
                     Ok(mut df) => {
-                        add_columns(&mut df, &row, &time)?;
-                        all_dfs.push(df);
+                        if add_columns(&mut df, &row, &time).is_ok() {
+                            Some(df)
+                        } else {
+                            warn!("Failed to add columns for {}", row.country);
+                            None
+                        }
                     }
                     Err(e) => {
                         warn!("Scrape failed for {}: {}", row.country, e);
+                        None
                     }
                 }
-            }
-        }
+            })
+            .collect();
 
         pb.finish_with_message("Done");
         print_elapsed(&start, "Scraping complete");

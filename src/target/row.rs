@@ -11,15 +11,18 @@ pub struct LocationRow {
 
 impl LocationRow {
     pub fn from_iters(iters: &mut [SeriesIter]) -> Result<Self> {
-        let next = |i: usize| -> Result<String> {
-            iters[i].next()
-                .map(|v| v.to_string().trim_matches('"').to_owned())
-                .ok_or_else(|| AppError::Parse("Missing column value".into()))
-        };
+        let values: Result<Vec<String>> = (0..iters.len())
+            .map(|i| {
+                iters[i].next()
+                    .map(|v| v.to_string().trim_matches('"').to_owned())
+                    .ok_or_else(|| AppError::Parse("Missing column value".into()))
+            })
+            .collect();
 
-        match iters.len() {
-            3 => Ok(Self::new_location(next(0)?, next(1)?, next(2)?)),
-            4 => Ok(Self::new_hotspot(next(0)?, next(1)?, next(2)?, next(3)?)),
+        let vals = values?;
+        match vals.len() {
+            3 => Ok(Self::new_location(vals[0].clone(), vals[1].clone(), vals[2].clone())),
+            4 => Ok(Self::new_hotspot(vals[0].clone(), vals[1].clone(), vals[2].clone(), vals[3].clone())),
             n => Err(AppError::InvalidElementCount(n)),
         }
     }

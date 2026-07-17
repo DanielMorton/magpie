@@ -1,4 +1,4 @@
-use polars::prelude::{CsvWriter, DataFrame, SerWriter};
+use polars::prelude::{CsvWriter, DataFrame, SerReader, SerWriter};
 use std::fs::File;
 use std::time::Instant;
 

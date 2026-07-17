@@ -1,4 +1,4 @@
-use polars::prelude::PolarsError;
+use polars::error::PolarsError;
 use std::num::ParseIntError;
 use thiserror::Error;
 

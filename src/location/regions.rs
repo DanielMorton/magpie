@@ -1,11 +1,12 @@
 use crate::error::{AppError, Result};
 use crate::location::loc::{Country, Hotspot, Region, SubRegion};
 use crate::selectors;
-use reqwest::Client;
+use reqwest::blocking::Client;
 use scraper::{ElementRef, Html};
 use std::collections::HashSet;
+use std::hash::Hash;
+use std::thread;
 use std::time::Duration;
-use tokio::time::sleep;
 use tracing::warn;
 
 const COUNTRIES_URL: &str = "https://ebird.org/region/world/subregions";
@@ -15,17 +16,17 @@ const HOTSPOT_PATH: &str = "hotspots";
 const MAX_RETRIES: u32 = 5;
 const BASE_DELAY_MS: u64 = 500;
 
-async fn fetch_html(client: &Client, url: &str) -> Result<Html> {
+fn fetch_html(client: &Client, url: &str) -> Result<Html> {
     let mut delay = BASE_DELAY_MS;
     for attempt in 0..MAX_RETRIES {
-        match client.get(url).send().await {
+        match client.get(url).send() {
             Ok(response) => {
-                let text = response.text().await?;
+                let text = response.text()?;
                 return Ok(Html::parse_document(&text));
             }
             Err(e) if attempt < MAX_RETRIES - 1 => {
                 warn!("Request failed (attempt {}): {}, retrying in {}ms", attempt + 1, e, delay);
-                sleep(Duration::from_millis(delay)).await;
+                thread::sleep(Duration::from_millis(delay));
                 delay *= 2;
             }
             Err(e) => return Err(e.into()),
@@ -40,7 +41,7 @@ fn parse_row(row: &ElementRef) -> Option<(String, String)> {
     Some((name.to_owned(), code.to_owned()))
 }
 
-async fn fetch_children<T, F>(
+fn fetch_children<T, F>(
     client: &Client,
     parent_code: &str,
     path: &str,
@@ -48,10 +49,11 @@ async fn fetch_children<T, F>(
     fallback: impl FnOnce() -> Vec<T>,
 ) -> Vec<T>
 where
+    T: Hash + Eq,
     F: Fn((String, String)) -> Option<T>,
 {
     let url = format!("{}/{}/{}", REGIONS_BASE, parent_code, path);
-    match fetch_html(client, &url).await {
+    match fetch_html(client, &url) {
         Ok(html) => {
             let items: HashSet<_> = html
                 .select(selectors::location::leaderboard())
@@ -70,8 +72,8 @@ where
     }
 }
 
-pub async fn get_countries(client: &Client) -> Result<Vec<Country>> {
-    let html = fetch_html(client, COUNTRIES_URL).await?;
+pub fn get_countries(client: &Client) -> Result<Vec<Country>> {
+    let html = fetch_html(client, COUNTRIES_URL)?;
     Ok(html
         .select(selectors::location::leaderboard())
         .next()
@@ -84,29 +86,29 @@ pub async fn get_countries(client: &Client) -> Result<Vec<Country>> {
         .collect())
 }
 
-pub async fn get_regions<'a>(client: &Client, country: &'a Country) -> Vec<Region<'a>> {
+pub fn get_regions<'a>(client: &Client, country: &'a Country) -> Vec<Region<'a>> {
     let cref = country;
     fetch_children(
         client, country.code(), SUBREGIONS_PATH,
         |(name, code)| Some(Region::new(name, code, cref)),
         || vec![Region::new(country.name(), country.code(), country)],
-    ).await
+    )
 }
 
-pub async fn get_sub_regions<'a>(client: &Client, region: &'a Region<'a>) -> Vec<SubRegion<'a>> {
+pub fn get_sub_regions<'a>(client: &Client, region: &'a Region<'a>) -> Vec<SubRegion<'a>> {
     let rref = region;
     fetch_children(
         client, region.code(), SUBREGIONS_PATH,
         |(name, code)| Some(SubRegion::new(name, code, rref)),
         || vec![SubRegion::new(region.name(), region.code(), region)],
-    ).await
+    )
 }
 
-pub async fn get_hotspots<'a>(client: &Client, sub_region: &'a SubRegion<'a>) -> Vec<Hotspot<'a>> {
+pub fn get_hotspots<'a>(client: &Client, sub_region: &'a SubRegion<'a>) -> Vec<Hotspot<'a>> {
     let sref = sub_region;
     fetch_children(
         client, sub_region.code(), HOTSPOT_PATH,
         |(name, code)| Some(Hotspot::new(name, code, sref)),
         Vec::new,
-    ).await
+    )
 }

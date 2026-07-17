@@ -23,14 +23,13 @@ enum Commands {
     Species(target::SpeciesArgs),
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     tracing_subscriber::fmt::init();
 
     let cli = Cli::parse();
     let result = match cli.command {
-        Commands::Species(args) => run_scraper::run(args).await,
-        Commands::Location => run_location::run().await,
+        Commands::Species(args) => run_scraper::run(args),
+        Commands::Location => run_location::run(),
     };
 
     if let Err(e) = result {

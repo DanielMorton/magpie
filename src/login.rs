@@ -1,17 +1,19 @@
 use crate::error::{AppError, Result};
 use regex::Regex;
-use reqwest::Client;
+use reqwest::blocking::Client;
 use rpassword::prompt_password;
 use std::io::{self, Write};
+use std::sync::OnceLock;
 
 const LOGIN_URL: &str = "https://secure.birds.cornell.edu/cassso/login";
 
-async fn get_token(client: &Client) -> Result<String> {
-    let text = client.get(LOGIN_URL).send().await?.text().await?;
+fn get_token(client: &Client) -> Result<String> {
+    let text = client.get(LOGIN_URL).send()?.text()?;
 
-    // Regex is ~10x faster than parsing full HTML for a single input
     static RE: OnceLock<Regex> = OnceLock::new();
-    let re = RE.get_or_init(|| Regex::new(r#"name="execution"\s+value="([^"]+)""#).unwrap());
+    let re = RE.get_or_init(|| {
+        Regex::new(r#"name="execution"\s+value="([^"]+)""#).unwrap()
+    });
 
     re.captures(&text)
         .and_then(|c| c.get(1))
@@ -19,9 +21,9 @@ async fn get_token(client: &Client) -> Result<String> {
         .ok_or(AppError::MissingLoginToken)
 }
 
-pub async fn login() -> Result<Client> {
+pub fn login() -> Result<Client> {
     let client = Client::builder().cookie_store(true).build()?;
-    let token = get_token(&client).await?;
+    let token = get_token(&client)?;
 
     print!("Username: ");
     io::stdout().flush()?;
@@ -37,8 +39,7 @@ pub async fn login() -> Result<Client> {
             ("execution", &token),
             ("_eventId", "submit"),
         ])
-        .send()
-        .await?;
+        .send()?;
 
     Ok(client)
 }

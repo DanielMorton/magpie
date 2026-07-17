@@ -2,13 +2,13 @@ use crate::error::Result;
 use crate::location::df::{hotspots_to_df, sub_regions_to_df};
 use crate::location::regions::{get_countries, get_hotspots, get_regions, get_sub_regions};
 use crate::utils::{print_elapsed, write_csv};
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
-use reqwest::Client;
+use indicatif::{MultiProgress, ParallelProgressIterator, ProgressBar, ProgressStyle};
+use rayon::prelude::*;
+use reqwest::blocking::Client;
 use std::time::Instant;
-use tokio::task;
 use tracing::info;
 
-pub async fn run() -> Result<()> {
+pub fn run() -> Result<()> {
     let client = Client::builder().cookie_store(true).build()?;
     let start = Instant::now();
     let mp = MultiProgress::new();
@@ -17,53 +17,30 @@ pub async fn run() -> Result<()> {
     ).unwrap().progress_chars("##-");
 
     info!("Fetching countries...");
-    let countries = get_countries(&client).await?;
+    let countries = get_countries(&client)?;
     info!("Found {} countries", countries.len());
 
-    // Fetch regions concurrently
     let pb = mp.add(ProgressBar::new(countries.len() as u64));
     pb.set_style(style.clone());
     pb.set_message("Regions");
 
-    let mut region_tasks = Vec::with_capacity(countries.len());
-    for country in &countries {
-        let client = client.clone();
-        let pb = pb.clone();
-        // Use Arc for shared ownership instead of unsafe if possible
-        region_tasks.push(task::spawn(async move {
-            let regions = get_regions(&client, country).await;
-            pb.inc(1);
-            regions
-        }));
-    }
-
-    let mut regions = Vec::new();
-    for task in region_tasks {
-        regions.extend(task.await.unwrap());
-    }
+    let regions: Vec<_> = countries
+        .par_iter()
+        .progress_with(pb.clone())
+        .flat_map(|c| get_regions(&client, c))
+        .collect();
     pb.finish_with_message("Regions done");
     info!("Found {} regions", regions.len());
 
-    // Fetch sub-regions concurrently
     let pb = mp.add(ProgressBar::new(regions.len() as u64));
     pb.set_style(style.clone());
     pb.set_message("Sub-regions");
 
-    let mut sub_tasks = Vec::with_capacity(regions.len());
-    for region in &regions {
-        let client = client.clone();
-        let pb = pb.clone();
-        sub_tasks.push(task::spawn(async move {
-            let subs = get_sub_regions(&client, region).await;
-            pb.inc(1);
-            subs
-        }));
-    }
-
-    let mut sub_regions = Vec::new();
-    for task in sub_tasks {
-        sub_regions.extend(task.await.unwrap());
-    }
+    let sub_regions: Vec<_> = regions
+        .par_iter()
+        .progress_with(pb.clone())
+        .flat_map(|r| get_sub_regions(&client, r))
+        .collect();
     pb.finish_with_message("Sub-regions done");
     info!("Found {} sub-regions", sub_regions.len());
 
@@ -71,27 +48,16 @@ pub async fn run() -> Result<()> {
     write_csv(&mut sub_region_df, "regions.csv")?;
     print_elapsed(&start, "Sub-regions scraped");
 
-    // Fetch hotspots concurrently
     let hotspot_start = Instant::now();
     let pb = mp.add(ProgressBar::new(sub_regions.len() as u64));
     pb.set_style(style.clone());
     pb.set_message("Hotspots");
 
-    let mut hotspot_tasks = Vec::with_capacity(sub_regions.len());
-    for sub in &sub_regions {
-        let client = client.clone();
-        let pb = pb.clone();
-        hotspot_tasks.push(task::spawn(async move {
-            let spots = get_hotspots(&client, sub).await;
-            pb.inc(1);
-            spots
-        }));
-    }
-
-    let mut hotspots = Vec::new();
-    for task in hotspot_tasks {
-        hotspots.extend(task.await.unwrap());
-    }
+    let hotspots: Vec<_> = sub_regions
+        .par_iter()
+        .progress_with(pb.clone())
+        .flat_map(|s| get_hotspots(&client, s))
+        .collect();
     pb.finish_with_message("Hotspots done");
     info!("Found {} hotspots", hotspots.len());
 
