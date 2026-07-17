@@ -1,44 +1,26 @@
 use crate::target::row::LocationRow;
-use crate::target::{
-    COMMON_NAME, COUNTRY, END_MONTH, HOTSPOT, PERCENT, REGION, SCIENTIFIC_NAME, START_MONTH,
-    SUB_REGION,
-};
-use polars::prelude::{DataFrame, NamedFrom, PolarsError, Series};
+use polars::prelude::{DataFrame, Series};
+use crate::error::Result;
 
-/// Adds columns that are constant for each scraped page. These columns are the location information:
-/// sub-region, region, country, hotspot (if applicable), and the start and end months.
-pub(super) fn add_columns(
-    df: &mut DataFrame,
-    row: &LocationRow,
-    time: &[(String, u8)],
-) -> Result<(), PolarsError> {
+pub fn add_columns(df: &mut DataFrame, row: &LocationRow, time: &[(String, u8)]) -> Result<()> {
     let size = df.height();
-    let constant_columns = [
-        (SUB_REGION, row.sub_region()),
-        (REGION, row.region()),
-        (COUNTRY, row.country()),
-    ];
+    df.with_column(Series::new("sub_region".into(), vec![row.sub_region.as_str(); size]))?;
+    df.with_column(Series::new("region".into(), vec![row.region.as_str(); size]))?;
+    df.with_column(Series::new("country".into(), vec![row.country.as_str(); size]))?;
 
-    for (name, value) in constant_columns {
-        df.with_column(Series::new(name.into(), vec![value; size]).into())?;
+    if let Some(hotspot) = &row.hotspot {
+        df.with_column(Series::new("hotspot".into(), vec![hotspot.as_str(); size]))?;
     }
 
-    if let Some(hotspot) = row.hotspot() {
-        df.with_column(Series::new(HOTSPOT.into(), vec![hotspot; size]).into())?;
-    }
-
-    df.with_column(Series::new(START_MONTH.into(), vec![time[0].1 as u32; size]).into())?;
-    df.with_column(Series::new(END_MONTH.into(), vec![time[1].1 as u32; size]).into())?;
-
+    df.with_column(Series::new("start month".into(), vec![time[0].1 as u32; size]))?;
+    df.with_column(Series::new("end month".into(), vec![time[1].1 as u32; size]))?;
     Ok(())
 }
 
-/// In cases where there is no data to return, returns an empty table.
-pub(super) fn empty_table() -> Result<DataFrame, PolarsError> {
-    let columns = vec![
-        Series::new(COMMON_NAME.into(), Vec::<String>::new()).into(),
-        Series::new(SCIENTIFIC_NAME.into(), Vec::<String>::new()).into(),
-        Series::new(PERCENT.into(), Vec::<f32>::new()).into(),
-    ];
-    DataFrame::new(0, columns)
+pub fn empty_table() -> Result<DataFrame> {
+    DataFrame::new(vec![
+        Series::new("common name".into(), Vec::<String>::new()),
+        Series::new("scientific name".into(), Vec::<String>::new()),
+        Series::new("percent".into(), Vec::<f32>::new()),
+    ]).map_err(Into::into)
 }

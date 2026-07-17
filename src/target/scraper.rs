@@ -1,251 +1,240 @@
-use crate::target::error::LocationError;
+use crate::error::{AppError, Result};
+use crate::selectors;
 use crate::target::row::LocationRow;
 use crate::target::scrape_params::{DateRange, ListType, LocationLevel};
-use crate::target::scrape_table::scrape_table;
-use crate::target::selectors::Selectors;
 use crate::target::table::{add_columns, empty_table};
-use crate::target::utils::{print_hms, remove_quote};
-use crate::target::{
-    BASE_URL, HOME_URL, HOTSPOT, HOTSPOT_COLUMNS, LOGIN_URL, MAX_BACKOFF, MIN_BACKOFF, REGION,
-    REGION_COLUMNS,
-};
-use indicatif::{ParallelProgressIterator, ProgressStyle};
+use crate::utils::print_elapsed;
+use futures::future;
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use itertools::Itertools;
 use polars::functions::concat_df_diagonal;
-use polars::prelude::{DataFrame, PolarsError};
-use rayon::prelude::*;
-use reqwest::blocking::{Client, Response};
+use polars::prelude::DataFrame;
+use reqwest::Client;
 use scraper::Html;
 use std::cmp::min;
-use std::str::FromStr;
 use std::sync::Arc;
-use std::thread;
 use std::time::{Duration, Instant};
+use tokio::time::sleep;
+use tracing::warn;
+
+const BASE_URL: &str = "https://ebird.org/targets";
+const HOME_URL: &str = "https://ebird.org/home";
+const LOGIN_URL: &str = "https://secure.birds.cornell.edu/cassso/login";
+const MAX_BACKOFF_SECS: u64 = 100;
+const MIN_BACKOFF_SECS: u64 = 5;
+const CONCURRENT_REQUESTS: usize = 50;
 
 pub struct Scraper {
     client: Client,
-    pub(super) date_range: DateRange,
-    pub(super) location_level: LocationLevel,
+    date_range: DateRange,
+    location_level: LocationLevel,
     list_type: ListType,
     loc_df: DataFrame,
-    time_range: Vec<(u8, u8)>,
+    time_ranges: Vec<(u8, u8)>,
 }
 
 impl Scraper {
-    pub(crate) fn new(
+    pub fn new(
         client: Client,
         date_range: DateRange,
-        list_level: LocationLevel,
+        location_level: LocationLevel,
         list_type: ListType,
         loc_df: DataFrame,
-        time_range: Vec<(u8, u8)>,
+        time_ranges: Vec<(u8, u8)>,
     ) -> Self {
-        Self {
-            client,
-            date_range,
-            location_level: list_level,
-            list_type,
-            loc_df,
-            time_range,
-        }
+        Self { client, date_range, location_level, list_type, loc_df, time_ranges }
     }
 
-    fn make_loc_vec(&self) -> Result<Vec<LocationRow>, LocationError> {
-        let loc_vec = if self.location_level == LocationLevel::Hotspot {
-            HOTSPOT_COLUMNS
-        } else {
-            REGION_COLUMNS
+    fn make_loc_rows(&self) -> Result<Vec<LocationRow>> {
+        let cols = match self.location_level {
+            LocationLevel::Hotspot => &["country", "region", "sub_region", "hotspot"][..],
+            LocationLevel::SubRegion => &["country", "region", "sub_region"][..],
         };
-        let selected = self
-            .loc_df
-            .select(loc_vec)
-            .expect("Failed to get location columns");
-        let mut loc = selected
-            .columns()
+
+        let selected = self.loc_df.select(cols)?;
+        let mut iters: Vec<_> = selected.columns()
             .iter()
-            .map(|col| col.as_materialized_series().iter())
-            .collect::<Vec<_>>();
+            .map(|c| c.as_materialized_series().iter())
+            .collect();
+
         (0..self.loc_df.shape().0)
-            .map(|_| LocationRow::new(&mut loc))
-            .collect::<Result<Vec<_>, _>>()
+            .map(|_| LocationRow::from_iters(&mut iters))
+            .collect()
     }
 
-    fn make_loc_payload(&self) -> Result<Vec<Vec<(String, String)>>, PolarsError> {
-        let location_level_code = self.location_level.to_string();
-        let columns = if self.list_type == ListType::Global {
-            vec![location_level_code]
+    fn make_loc_payloads(&self) -> Result<Vec<Vec<(String, String)>>> {
+        let level_code = self.location_level.to_string();
+        let cols = if self.list_type == ListType::Global {
+            vec![level_code]
         } else {
-            vec![location_level_code, self.list_type.to_string()]
+            vec![level_code, self.list_type.to_string()]
         };
-        let selected = self.loc_df.select(columns)?;
-        let mut col_iters = selected
-            .columns()
-            .iter()
-            .map(|col| col.as_materialized_series().iter())
-            .collect::<Vec<_>>();
 
-        let mut loc_payload: Vec<Vec<(String, String)>> = (0..self.loc_df.shape().0)
+        let selected = self.loc_df.select(cols)?;
+        let mut iters: Vec<_> = selected.columns()
+            .iter()
+            .map(|c| c.as_materialized_series().iter())
+            .collect();
+
+        let mut payloads: Vec<Vec<(String, String)>> = (0..self.loc_df.shape().0)
             .map(|_| {
-                col_iters
-                    .iter_mut()
-                    .enumerate()
+                iters.iter_mut().enumerate()
                     .map(|(i, iter)| {
-                        let value = iter.next().unwrap().to_string();
-                        (format!("r{}", i + 1), remove_quote(&value))
+                        let val = iter.next().unwrap().to_string();
+                        (format!("r{}", i + 1), val.trim_matches('"').to_owned())
                     })
                     .collect()
             })
             .collect();
 
         if self.list_type == ListType::Global {
-            loc_payload.iter_mut().for_each(|payload| {
-                payload.push(("r2".to_string(), "world".to_string()));
-            });
+            payloads.iter_mut().for_each(|p| p.push(("r2".into(), "world".into())));
         }
-        Ok(loc_payload)
+        Ok(payloads)
     }
 
-    fn make_time_payload(&self) -> Result<Vec<Vec<(String, u8)>>, PolarsError> {
-        Ok(self
-            .time_range
-            .iter()
-            .map(|&(s, e)| vec![("bmo".to_string(), s), ("emo".to_string(), e)])
-            .collect())
-    }
-
-    fn get_response(
+    async fn fetch_with_backoff(
         &self,
         loc: &[(String, String)],
         time: &[(String, u8)],
         date_query: &[(&str, String)],
-        sleep: u64,
-    ) -> Response {
-        match self
-            .client
+        sleep_secs: u64,
+    ) -> Result<reqwest::Response> {
+        let response = self.client
             .get(BASE_URL)
             .query(loc)
             .query(time)
             .query(date_query)
             .send()
-        {
-            Ok(response) => {
-                let url = response.url().to_string();
-                if !(url.contains(LOGIN_URL) || url.contains(HOME_URL)) {
-                    response
-                } else {
-                    thread::sleep(Duration::from_secs(sleep));
-                    self.get_response(loc, time, date_query, 2 * sleep)
-                }
+            .await?;
+
+        let url = response.url().to_string();
+        if url.contains(LOGIN_URL) || url.contains(HOME_URL) {
+            if sleep_secs >= MAX_BACKOFF_SECS {
+                return Err(AppError::MaxRetries(url));
             }
-            Err(_) => {
-                thread::sleep(Duration::from_secs(sleep));
-                self.get_response(loc, time, date_query, 2 * sleep)
-            }
+            sleep(Duration::from_secs(sleep_secs)).await;
+            Box::pin(self.fetch_with_backoff(loc, time, date_query, min(sleep_secs * 2, MAX_BACKOFF_SECS))).await
+        } else {
+            Ok(response)
         }
     }
 
-    pub fn scrape_pages(&self) -> Result<DataFrame, PolarsError> {
-        let date_query = Arc::new(vec![("t2", self.date_range.to_string())]);
-        let loc_query = self.make_loc_payload()?;
-        let loc_vec = self.make_loc_vec()?;
-        let time_query = self.make_time_payload()?;
-        let arc_scraper = Arc::new(self);
-
-        let payloads: Vec<_> = loc_vec
-            .into_iter()
-            .zip(loc_query)
-            .cartesian_product(time_query)
-            .collect();
-
-        let start = Instant::now();
-        let style = ProgressStyle::with_template("{bar:100} {pos:>7}/{len:7} [{elapsed}] [{eta}]")
-            .expect("Failed to create progress style");
-
-        let output_list: Vec<_> = payloads
-            .into_par_iter()
-            .progress_with_style(style)
-            .map(|((row, loc), time)| {
-                let mut df = arc_scraper
-                    .scrape_page(loc, &time, &date_query, MIN_BACKOFF)
-                    .expect("Expected single table of data.");
-                add_columns(&mut df, &row, &time).expect("Failed to add columns");
-                df
-            })
-            .collect();
-
-        print_hms(&start);
-        concat_df_diagonal(&output_list)
-    }
-
-    fn scrape_page(
+    async fn scrape_single(
         &self,
+        row: LocationRow,
         loc: Vec<(String, String)>,
-        time: &[(String, u8)],
-        date_query: &[(&str, String)],
-        sleep: u64,
-    ) -> Result<DataFrame, PolarsError> {
-        let loc_code = &loc[0].1;
-        let response = self.get_response(&loc, time, date_query, sleep);
+        time: Vec<(String, u8)>,
+    ) -> Result<DataFrame> {
+        let loc_code = loc[0].1.clone();
+        let date_query = vec![("t2", self.date_range.to_string())];
+
+        let response = self.fetch_with_backoff(&loc, &time, &date_query, MIN_BACKOFF_SECS).await?;
         let url = response.url().to_string();
-        let doc = match response.text() {
-            Ok(text) => Html::parse_document(&text),
-            Err(e) => {
-                eprintln!("Error: {}", e);
-                thread::sleep(Duration::from_secs(sleep));
-                return self.scrape_page(loc, time, date_query, min(2 * sleep, MAX_BACKOFF));
-            }
+        let text = response.text().await?;
+        let doc = Html::parse_document(&text);
+
+        let (selector, format) = match self.location_level {
+            LocationLevel::Hotspot => (selectors::target::hotspot_select(), "hotspot"),
+            LocationLevel::SubRegion => (selectors::target::region_select(), "region"),
         };
 
-        let (doc_selector, doc_format) = if self.location_level == LocationLevel::Hotspot {
-            (Selectors::hotspot_select(), HOTSPOT)
-        } else {
-            (Selectors::region_select(), REGION)
-        };
-
-        if doc
-            .select(doc_selector)
+        let valid = doc.select(selector)
             .next()
             .and_then(|r| r.value().attr("href"))
-            .filter(|&r| r == format!("{}/{}", doc_format, loc_code))
-            .is_none()
-        {
-            return if sleep >= MAX_BACKOFF {
-                eprintln!("Hotspot Empty {} {} {}", url, loc_code, sleep);
-                empty_table()
-            } else {
-                thread::sleep(Duration::from_secs(sleep));
-                self.scrape_page(loc, time, date_query, 2 * sleep)
-            };
+            .map(|href| href == format!("{}/{}", format, loc_code))
+            .unwrap_or(false);
+
+        if !valid {
+            warn!("Page validation failed for {}: {}", loc_code, url);
+            return empty_table();
         }
 
-        let checklists = doc
-            .select(Selectors::checklists())
+        let checklists = doc.select(selectors::target::checklists())
             .next()
-            .and_then(|element| element.text().next())
-            .and_then(|text| {
-                text.chars()
-                    .filter(|c| c.is_numeric())
-                    .collect::<String>()
-                    .parse()
-                    .ok()
-            })
+            .and_then(|el| el.text().next())
+            .and_then(|text| text.chars().filter(|c| c.is_numeric()).collect::<String>().parse().ok())
             .unwrap_or(0);
 
-        match doc
-            .select(Selectors::species_count())
+        let species_count = doc.select(selectors::target::species_count())
             .next()
-            .and_then(|count| count.text().next())
-            .and_then(|count| u32::from_str(count).ok())
-        {
-            Some(0) => empty_table(),
-            Some(_) => doc
-                .select(Selectors::native())
-                .next()
-                .map_or_else(empty_table, |t| scrape_table(t, checklists)),
-            None => {
-                thread::sleep(Duration::from_secs(sleep));
-                self.scrape_page(loc, time, date_query, min(2 * sleep, MAX_BACKOFF))
+            .and_then(|c| c.text().next())
+            .and_then(|c| c.parse::<u32>().ok());
+
+        match species_count {
+            Some(0) | None => empty_table(),
+            Some(_) => {
+                doc.select(selectors::target::native())
+                    .next()
+                    .map_or_else(empty_table, |t| crate::target::scrape_table::scrape_table(t, checklists))
             }
+        }
+    }
+
+    pub async fn scrape_all(&self) -> Result<DataFrame> {
+        let start = Instant::now();
+        let loc_rows = self.make_loc_rows()?;
+        let loc_payloads = self.make_loc_payloads()?;
+
+        let items: Vec<_> = loc_rows.into_iter()
+            .zip(loc_payloads)
+            .cartesian_product(self.time_ranges.clone().into_iter().map(|(s, e)| {
+                vec![("bmo".into(), s), ("emo".into(), e)]
+            }))
+            .collect();
+
+        let total = items.len();
+        let mp = MultiProgress::new();
+        let pb = mp.add(ProgressBar::new(total as u64));
+        pb.set_style(
+            ProgressStyle::with_template("{bar:60.green} {pos}/{len} [{elapsed}] {msg}")
+                .unwrap()
+                .progress_chars("=> "),
+        );
+        pb.set_message("Scraping");
+
+        let scraper = Arc::new(self);
+        let pb = Arc::new(pb);
+        let mut all_dfs = Vec::with_capacity(total);
+
+        for chunk in items.chunks(CONCURRENT_REQUESTS) {
+            let futures: Vec<_> = chunk.iter()
+                .map(|((row, loc), time)| {
+                    let s = scraper.clone();
+                    let pb = pb.clone();
+                    let row = row.clone();
+                    let loc = loc.clone();
+                    let time = time.clone();
+                    async move {
+                        let result = s.scrape_single(row.clone(), loc, time.clone()).await;
+                        pb.inc(1);
+                        (row, time, result)
+                    }
+                })
+                .collect();
+
+            let results = future::join_all(futures).await;
+
+            for (row, time, result) in results {
+                match result {
+                    Ok(mut df) => {
+                        add_columns(&mut df, &row, &time)?;
+                        all_dfs.push(df);
+                    }
+                    Err(e) => {
+                        warn!("Scrape failed for {}: {}", row.country, e);
+                    }
+                }
+            }
+        }
+
+        pb.finish_with_message("Done");
+        print_elapsed(&start, "Scraping complete");
+
+        if all_dfs.is_empty() {
+            empty_table()
+        } else {
+            concat_df_diagonal(&all_dfs).map_err(Into::into)
         }
     }
 }

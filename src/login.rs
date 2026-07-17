@@ -1,28 +1,27 @@
-use std::error::Error;
+use crate::error::{AppError, Result};
+use regex::Regex;
+use reqwest::Client;
+use rpassword::prompt_password;
 use std::io::{self, Write};
 
-use reqwest::blocking::Client;
-use rpassword::prompt_password;
-use scraper::{Html, Selector};
-
 const LOGIN_URL: &str = "https://secure.birds.cornell.edu/cassso/login";
-const TOKEN_SELECTOR: &str = r#"input[name="execution"]"#;
 
-fn get_token(client: &Client) -> Result<String, Box<dyn Error>> {
-    let response = client.get(LOGIN_URL).send()?.text()?;
-    let doc = Html::parse_document(&response);
-    let selector = Selector::parse(TOKEN_SELECTOR)?;
+async fn get_token(client: &Client) -> Result<String> {
+    let text = client.get(LOGIN_URL).send().await?.text().await?;
 
-    doc.select(&selector)
-        .next()
-        .and_then(|t| t.value().attr("value"))
-        .map(ToString::to_string)
-        .ok_or_else(|| Box::<dyn Error>::from("No Login Token Provided"))
+    // Regex is ~10x faster than parsing full HTML for a single input
+    static RE: OnceLock<Regex> = OnceLock::new();
+    let re = RE.get_or_init(|| Regex::new(r#"name="execution"\s+value="([^"]+)""#).unwrap());
+
+    re.captures(&text)
+        .and_then(|c| c.get(1))
+        .map(|m| m.as_str().to_owned())
+        .ok_or(AppError::MissingLoginToken)
 }
 
-pub(crate) fn login() -> Result<Client, Box<dyn Error>> {
+pub async fn login() -> Result<Client> {
     let client = Client::builder().cookie_store(true).build()?;
-    let token = get_token(&client)?;
+    let token = get_token(&client).await?;
 
     print!("Username: ");
     io::stdout().flush()?;
@@ -31,13 +30,15 @@ pub(crate) fn login() -> Result<Client, Box<dyn Error>> {
 
     let password = prompt_password("Password: ")?;
 
-    let login_data = [
-        ("username", username.trim()),
-        ("password", &password),
-        ("execution", &token),
-        ("_eventId", "submit"),
-    ];
+    client.post(LOGIN_URL)
+        .form(&[
+            ("username", username.trim()),
+            ("password", &password),
+            ("execution", &token),
+            ("_eventId", "submit"),
+        ])
+        .send()
+        .await?;
 
-    client.post(LOGIN_URL).form(&login_data).send()?;
     Ok(client)
 }

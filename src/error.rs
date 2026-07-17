@@ -1,0 +1,50 @@
+use polars::prelude::PolarsError;
+use std::num::ParseIntError;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum AppError {
+    #[error("HTTP request failed: {0}")]
+    Http(#[from] reqwest::Error),
+
+    #[error("Polars error: {0}")]
+    Polars(#[from] PolarsError),
+
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("Parse error: {0}")]
+    Parse(String),
+
+    #[error("Invalid month: {0}. Must be 1-12")]
+    InvalidMonth(u8),
+
+    #[error("Invalid time range: {0}. Expected format: '<start>-<end>'")]
+    InvalidTimeRange(String),
+
+    #[error("Location row must have 3 or 4 elements, got {0}")]
+    InvalidElementCount(usize),
+
+    #[error("No login token found in response")]
+    MissingLoginToken,
+
+    #[error("Max retries exceeded for URL: {0}")]
+    MaxRetries(String),
+
+    #[error("Invalid list type for location level")]
+    InvalidListType,
+
+    #[error("No output file specified")]
+    MissingOutputFile,
+
+    #[error("No location data provided")]
+    MissingLocation,
+}
+
+impl From<ParseIntError> for AppError {
+    fn from(_: ParseIntError) -> Self {
+        AppError::Parse("Invalid integer".into())
+    }
+}
+
+pub type Result<T> = std::result::Result<T, AppError>;
