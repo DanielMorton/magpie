@@ -13,32 +13,26 @@ const COUNTRIES_URL: &str = "https://ebird.org/region/world/subregions";
 const REGIONS_BASE: &str = "https://ebird.org/region";
 const SUBREGIONS_PATH: &str = "subregions";
 const HOTSPOT_PATH: &str = "hotspots";
-const MAX_RETRIES: u32 = 5;
-const BASE_DELAY_MS: u64 = 500;
 
-fn fetch_html(client: &Client, url: &str) -> Result<Html> {
-    let mut delay = BASE_DELAY_MS;
-    for attempt in 0..MAX_RETRIES {
-        match client.get(url).send() {
-            Ok(response) => {
-                let text = response.text()?;
-                return Ok(Html::parse_document(&text));
-            }
-            Err(e) if attempt < MAX_RETRIES - 1 => {
-                warn!("Request failed (attempt {}): {}, retrying in {}ms", attempt + 1, e, delay);
-                thread::sleep(Duration::from_millis(delay));
-                delay *= 2;
-            }
-            Err(e) => return Err(e.into()),
-        }
-    }
-    Err(AppError::MaxRetries(url.to_string()))
+fn get_html(client: &Client, url: &str) -> Result<Html> {
+    client
+        .get(url)
+        .send()?
+        .text()
+        .map(|text| Html::parse_document(&text))
+        .map_err(Into::into)
 }
 
-fn parse_row(row: &ElementRef) -> Option<(String, String)> {
-    let name = row.value().attr("title")?;
-    let code = row.value().attr("href")?.split('/').last()?;
-    Some((name.to_owned(), code.to_owned()))
+fn parse_row(row: &ElementRef) -> Result<(String, String)> {
+    let name = row.value().attr("title").ok_or("No name for row")?;
+    let code = row
+        .value()
+        .attr("href")
+        .ok_or("No url for row")?
+        .split('/')
+        .last()
+        .ok_or("Improperly formatted url for row")?;
+    Ok((name.to_owned(), code.to_owned()))
 }
 
 fn fetch_children<T, F>(
@@ -47,41 +41,60 @@ fn fetch_children<T, F>(
     path: &str,
     parser: F,
     fallback: impl FnOnce() -> Vec<T>,
+    use_fallback_on_empty: bool,
 ) -> Vec<T>
 where
     T: Hash + Eq,
     F: Fn((String, String)) -> Option<T>,
 {
     let url = format!("{}/{}/{}", REGIONS_BASE, parent_code, path);
-    match fetch_html(client, &url) {
-        Ok(html) => {
-            let items: HashSet<_> = html
-                .select(selectors::location::leaderboard())
-                .next()
-                .into_iter()
-                .flat_map(|el| el.select(selectors::location::a()))
-                .filter_map(|row| parse_row(&row))
+
+    let html = match get_html(client, &url) {
+        Ok(html) => html,
+        Err(e) => {
+            warn!("Error fetching {}: {}", url, e);
+            return vec![];
+        }
+    };
+
+    match html.select(selectors::location::leaderboard()).next() {
+        Some(element) => {
+            let items: HashSet<_> = element
+                .select(selectors::location::a())
+                .filter_map(|row| parse_row(&row).ok())
                 .filter_map(&parser)
                 .collect();
-            if items.is_empty() { fallback() } else { items.into_iter().collect() }
+
+            if !items.is_empty() {
+                items.into_iter().collect()
+            } else if use_fallback_on_empty {
+                fallback()
+            } else {
+                vec![]
+            }
         }
-        Err(e) => {
-            warn!("Failed to fetch {}: {}", url, e);
-            fallback()
+        None => {
+            thread::sleep(Duration::from_secs(1));
+            fetch_children(client, parent_code, path, parser, fallback, use_fallback_on_empty)
         }
     }
 }
 
 pub fn get_countries(client: &Client) -> Result<Vec<Country>> {
-    let html = fetch_html(client, COUNTRIES_URL)?;
+    let html = get_html(client, COUNTRIES_URL)?;
     Ok(html
         .select(selectors::location::leaderboard())
         .next()
-        .into_iter()
-        .flat_map(|el| el.select(selectors::location::a()))
-        .filter_map(|row| parse_row(&row))
-        .map(|(name, code)| Country::new(name, code))
-        .collect::<HashSet<_>>()
+        .map(|element| {
+            element
+                .select(selectors::location::a())
+                .filter_map(|row| {
+                    let (name, code) = parse_row(&row).ok()?;
+                    Some(Country::new(name, code))
+                })
+                .collect::<HashSet<_>>()
+        })
+        .unwrap_or_default()
         .into_iter()
         .collect())
 }
@@ -92,6 +105,7 @@ pub fn get_regions<'a>(client: &Client, country: &'a Country) -> Vec<Region<'a>>
         client, country.code(), SUBREGIONS_PATH,
         |(name, code)| Some(Region::new(name, code, cref)),
         || vec![Region::new(country.name(), country.code(), country)],
+        true,
     )
 }
 
@@ -101,6 +115,7 @@ pub fn get_sub_regions<'a>(client: &Client, region: &'a Region<'a>) -> Vec<SubRe
         client, region.code(), SUBREGIONS_PATH,
         |(name, code)| Some(SubRegion::new(name, code, rref)),
         || vec![SubRegion::new(region.name(), region.code(), region)],
+        true,
     )
 }
 
@@ -110,5 +125,6 @@ pub fn get_hotspots<'a>(client: &Client, sub_region: &'a SubRegion<'a>) -> Vec<H
         client, sub_region.code(), HOTSPOT_PATH,
         |(name, code)| Some(Hotspot::new(name, code, sref)),
         Vec::new,
+        false,
     )
 }

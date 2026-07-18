@@ -47,4 +47,10 @@ impl From<ParseIntError> for AppError {
     }
 }
 
+impl From<&str> for AppError {
+    fn from(s: &str) -> Self {
+        AppError::Parse(s.to_owned())
+    }
+}
+
 pub type Result<T> = std::result::Result<T, AppError>;
