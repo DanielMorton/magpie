@@ -35,7 +35,12 @@ impl SpeciesArgs {
             }
         } else {
             match location.subregion {
-                Some(_) => match (self.list_options.local, self.list_options.region, self.list_options.country, self.list_options.global) {
+                Some(_) => match (
+                    self.list_options.local,
+                    self.list_options.region,
+                    self.list_options.country,
+                    self.list_options.global,
+                ) {
                     (true, _, _, _) => Ok(ListType::SubRegion),
                     (_, true, _, _) => Ok(ListType::Region),
                     (_, _, true, _) => Ok(ListType::Country),
@@ -48,7 +53,12 @@ impl SpeciesArgs {
     }
 
     pub fn get_date_range(&self) -> Result<DateRange> {
-        match (self.date_options.life, self.date_options.ytd, self.date_options.current_month, self.date_options.date) {
+        match (
+            self.date_options.life,
+            self.date_options.ytd,
+            self.date_options.current_month,
+            self.date_options.date,
+        ) {
             (true, _, _, _) => Ok(DateRange::Life),
             (_, true, _, _) => Ok(DateRange::Year),
             (_, _, true, _) => Ok(DateRange::Month),

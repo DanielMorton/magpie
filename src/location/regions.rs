@@ -75,7 +75,14 @@ where
         }
         None => {
             thread::sleep(Duration::from_secs(1));
-            fetch_children(client, parent_code, path, parser, fallback, use_fallback_on_empty)
+            fetch_children(
+                client,
+                parent_code,
+                path,
+                parser,
+                fallback,
+                use_fallback_on_empty,
+            )
         }
     }
 }
@@ -102,7 +109,9 @@ pub fn get_countries(client: &Client) -> Result<Vec<Country>> {
 pub fn get_regions<'a>(client: &Client, country: &'a Country) -> Vec<Region<'a>> {
     let cref = country;
     fetch_children(
-        client, country.code(), SUBREGIONS_PATH,
+        client,
+        country.code(),
+        SUBREGIONS_PATH,
         |(name, code)| Some(Region::new(name, code, cref)),
         || vec![Region::new(country.name(), country.code(), country)],
         true,
@@ -112,7 +121,9 @@ pub fn get_regions<'a>(client: &Client, country: &'a Country) -> Vec<Region<'a>>
 pub fn get_sub_regions<'a>(client: &Client, region: &'a Region<'a>) -> Vec<SubRegion<'a>> {
     let rref = region;
     fetch_children(
-        client, region.code(), SUBREGIONS_PATH,
+        client,
+        region.code(),
+        SUBREGIONS_PATH,
         |(name, code)| Some(SubRegion::new(name, code, rref)),
         || vec![SubRegion::new(region.name(), region.code(), region)],
         true,
@@ -122,7 +133,9 @@ pub fn get_sub_regions<'a>(client: &Client, region: &'a Region<'a>) -> Vec<SubRe
 pub fn get_hotspots<'a>(client: &Client, sub_region: &'a SubRegion<'a>) -> Vec<Hotspot<'a>> {
     let sref = sub_region;
     fetch_children(
-        client, sub_region.code(), HOTSPOT_PATH,
+        client,
+        sub_region.code(),
+        HOTSPOT_PATH,
         |(name, code)| Some(Hotspot::new(name, code, sref)),
         Vec::new,
         false,

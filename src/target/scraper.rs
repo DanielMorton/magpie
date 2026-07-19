@@ -51,7 +51,14 @@ impl Scraper {
         loc_df: DataFrame,
         time_ranges: Vec<(u8, u8)>,
     ) -> Self {
-        Self { client, date_range, location_level, list_type, loc_df, time_ranges }
+        Self {
+            client,
+            date_range,
+            location_level,
+            list_type,
+            loc_df,
+            time_ranges,
+        }
     }
 
     fn make_loc_rows(&self) -> Result<Vec<LocationRow>> {
@@ -61,7 +68,8 @@ impl Scraper {
         };
 
         let selected = self.loc_df.select(cols)?;
-        let mut iters: Vec<_> = selected.columns()
+        let mut iters: Vec<_> = selected
+            .columns()
             .iter()
             .map(|c| c.as_materialized_series().iter())
             .collect();
@@ -85,14 +93,17 @@ impl Scraper {
         };
 
         let selected = self.loc_df.select(cols)?;
-        let mut iters: Vec<_> = selected.columns()
+        let mut iters: Vec<_> = selected
+            .columns()
             .iter()
             .map(|c| c.as_materialized_series().iter())
             .collect();
 
         let mut payloads: Vec<Vec<(String, String)>> = (0..self.loc_df.shape().0)
             .map(|_| {
-                iters.iter_mut().enumerate()
+                iters
+                    .iter_mut()
+                    .enumerate()
                     .map(|(i, iter)| {
                         let val = iter.next().unwrap().to_string();
                         (format!("r{}", i + 1), val.trim_matches('"').to_owned())
@@ -102,7 +113,9 @@ impl Scraper {
             .collect();
 
         if self.list_type == ListType::Global {
-            payloads.iter_mut().for_each(|p| p.push(("r2".into(), "world".into())));
+            payloads
+                .iter_mut()
+                .for_each(|p| p.push(("r2".into(), "world".into())));
         }
         Ok(payloads)
     }
@@ -114,7 +127,8 @@ impl Scraper {
         date_query: &[(&str, String)],
         sleep_secs: u64,
     ) -> Result<reqwest::blocking::Response> {
-        let response = self.client
+        let response = self
+            .client
             .get(BASE_URL)
             .query(loc)
             .query(time)
@@ -151,7 +165,8 @@ impl Scraper {
             LocationLevel::SubRegion => (selectors::target::region_select(), "region"),
         };
 
-        let valid = doc.select(selector)
+        let valid = doc
+            .select(selector)
             .next()
             .and_then(|r| r.value().attr("href"))
             .map(|href| href == format!("{}/{}", format, loc_code))
@@ -161,13 +176,21 @@ impl Scraper {
             return Ok((empty_table()?, false));
         }
 
-        let checklists = doc.select(selectors::target::checklists())
+        let checklists = doc
+            .select(selectors::target::checklists())
             .next()
             .and_then(|el| el.text().next())
-            .and_then(|text| text.chars().filter(|c| c.is_numeric()).collect::<String>().parse().ok())
+            .and_then(|text| {
+                text.chars()
+                    .filter(|c| c.is_numeric())
+                    .collect::<String>()
+                    .parse()
+                    .ok()
+            })
             .unwrap_or(0);
 
-        let species_count = doc.select(selectors::target::species_count())
+        let species_count = doc
+            .select(selectors::target::species_count())
             .next()
             .and_then(|c| c.text().next())
             .and_then(|c| c.parse::<u32>().ok());
@@ -175,9 +198,12 @@ impl Scraper {
         match species_count {
             Some(0) | None => Ok((empty_table()?, true)),
             Some(_) => {
-                let df = doc.select(selectors::target::native())
+                let df = doc
+                    .select(selectors::target::native())
                     .next()
-                    .map_or_else(empty_table, |t| crate::target::scrape_table::scrape_table(t, checklists))?;
+                    .map_or_else(empty_table, |t| {
+                        crate::target::scrape_table::scrape_table(t, checklists)
+                    })?;
                 Ok((df, true))
             }
         }
@@ -196,7 +222,12 @@ impl Scraper {
             if attempt > 0 {
                 let backoff = min(2u64.pow(attempt as u32), 30);
                 thread::sleep(Duration::from_secs(backoff));
-                info!("Retrying {} (attempt {}/{})", loc_code, attempt + 1, MAX_RETRIES);
+                info!(
+                    "Retrying {} (attempt {}/{})",
+                    loc_code,
+                    attempt + 1,
+                    MAX_RETRIES
+                );
             }
 
             match self.scrape_single_attempt(&loc, &time) {
@@ -217,14 +248,15 @@ impl Scraper {
             time: time_tuple,
         };
 
-        warn!("Failed after {} retries for {}: {}", MAX_RETRIES, loc_code, failure.reason);
+        warn!(
+            "Failed after {} retries for {}: {}",
+            MAX_RETRIES, loc_code, failure.reason
+        );
         Ok((empty_table()?, Some(failure)))
     }
 
     fn build_query_string(&self, loc: &[(String, String)], time: &[(String, u8)]) -> String {
-        let mut parts: Vec<String> = loc.iter()
-            .map(|(k, v)| format!("{}={}", k, v))
-            .collect();
+        let mut parts: Vec<String> = loc.iter().map(|(k, v)| format!("{}={}", k, v)).collect();
         parts.push(format!("bmo={}&emo={}", time[0].1, time[1].1));
         parts.push(format!("t2={}", self.date_range));
         parts.join("&")
@@ -235,11 +267,15 @@ impl Scraper {
         let loc_rows = self.make_loc_rows()?;
         let loc_payloads = self.make_loc_payloads()?;
 
-        let items: Vec<_> = loc_rows.into_iter()
+        let items: Vec<_> = loc_rows
+            .into_iter()
             .zip(loc_payloads)
-            .cartesian_product(self.time_ranges.clone().into_iter().map(|(s, e)| {
-                vec![("bmo".into(), s), ("emo".into(), e)]
-            }))
+            .cartesian_product(
+                self.time_ranges
+                    .clone()
+                    .into_iter()
+                    .map(|(s, e)| vec![("bmo".into(), s), ("emo".into(), e)]),
+            )
             .collect();
 
         let total = items.len();
@@ -258,8 +294,8 @@ impl Scraper {
         let all_dfs: Vec<_> = items
             .into_par_iter()
             .progress_with(pb.clone())
-            .filter_map(|((row, loc), time)| {
-                match self.scrape_single(loc, time.clone()) {
+            .filter_map(
+                |((row, loc), time)| match self.scrape_single(loc, time.clone()) {
                     Ok((mut df, None)) => {
                         if add_columns(&mut df, &row, &time).is_ok() {
                             Some(df)
@@ -278,8 +314,8 @@ impl Scraper {
                         error!("Scrape failed for {}: {}", row.country, e);
                         None
                     }
-                }
-            })
+                },
+            )
             .collect();
 
         pb.finish_with_message("Done");
@@ -290,7 +326,10 @@ impl Scraper {
 
         if !failures.is_empty() {
             self.write_failures(&failures)?;
-            warn!("{} scrapes failed. See failures.csv for details.", failure_count);
+            warn!(
+                "{} scrapes failed. See failures.csv for details.",
+                failure_count
+            );
         }
 
         if all_dfs.is_empty() {
@@ -299,8 +338,13 @@ impl Scraper {
             }
             empty_table()
         } else {
-            let df = concat_df_diagonal(&all_dfs).map_err(AppError::from)?;if failure_count > 0 {
-                info!("Partial success: {} items scraped, {} failed", all_dfs.len(), failure_count);
+            let df = concat_df_diagonal(&all_dfs).map_err(AppError::from)?;
+            if failure_count > 0 {
+                info!(
+                    "Partial success: {} items scraped, {} failed",
+                    all_dfs.len(),
+                    failure_count
+                );
             }
             Ok(df)
         }
@@ -312,12 +356,14 @@ impl Scraper {
         let mut file = std::fs::File::create("failures.csv")?;
         writeln!(file, "loc_code,url,reason,start_month,end_month")?;
         for f in failures {
-            writeln!(file, "{},{},{},{},{}",
-                     f.loc_code,
-                     f.url.replace(',', "%2C"),
-                     f.reason.replace(',', ";"),
-                     f.time.0,
-                     f.time.1
+            writeln!(
+                file,
+                "{},{},{},{},{}",
+                f.loc_code,
+                f.url.replace(',', "%2C"),
+                f.reason.replace(',', ";"),
+                f.time.0,
+                f.time.1
             )?;
         }
         Ok(())

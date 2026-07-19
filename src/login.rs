@@ -11,9 +11,7 @@ fn get_token(client: &Client) -> Result<String> {
     let text = client.get(LOGIN_URL).send()?.text()?;
 
     static RE: OnceLock<Regex> = OnceLock::new();
-    let re = RE.get_or_init(|| {
-        Regex::new(r#"name="execution"\s+value="([^"]+)""#).unwrap()
-    });
+    let re = RE.get_or_init(|| Regex::new(r#"name="execution"\s+value="([^"]+)""#).unwrap());
 
     re.captures(&text)
         .and_then(|c| c.get(1))
@@ -32,7 +30,8 @@ pub fn login() -> Result<Client> {
 
     let password = prompt_password("Password: ")?;
 
-    client.post(LOGIN_URL)
+    client
+        .post(LOGIN_URL)
         .form(&[
             ("username", username.trim()),
             ("password", &password),
