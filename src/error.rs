@@ -1,4 +1,3 @@
-use polars::error::PolarsError;
 use std::num::ParseIntError;
 use thiserror::Error;
 
@@ -7,11 +6,11 @@ pub enum AppError {
     #[error("HTTP request failed: {0}")]
     Http(#[from] reqwest::Error),
 
-    #[error("Polars error: {0}")]
-    Polars(#[from] PolarsError),
-
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
+
+    #[error("CSV error: {0}")]
+    Csv(#[from] csv::Error),
 
     #[error("Parse error: {0}")]
     Parse(String),

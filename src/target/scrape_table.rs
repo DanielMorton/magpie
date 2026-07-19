@@ -1,8 +1,14 @@
 use crate::error::Result;
 use crate::selectors;
-use polars::functions::concat_df_diagonal;
-use polars::prelude::{Column, DataFrame, NamedFrom, Series};
 use scraper::ElementRef;
+
+#[derive(Debug, Clone)]
+pub struct SpeciesRecord {
+    pub common_name: String,
+    pub scientific_name: String,
+    pub percent: f32,
+    pub checklists: i32,
+}
 
 fn get_common_name(species: Option<&scraper::ElementRef>) -> String {
     species
@@ -39,28 +45,19 @@ fn get_percent(row: &ElementRef) -> f32 {
         .unwrap_or(0.0)
 }
 
-pub fn scrape_table(table: ElementRef, checklists: i32) -> Result<DataFrame> {
-    let rows: Result<Vec<DataFrame>> = table
-        .select(selectors::target::rows())
-        .map(|row| {
-            let (common, scientific) = get_species(&row)?;
-            let percent = get_percent(&row);
-            DataFrame::new(
-                1,
-                vec![
-                    Column::from(Series::new("common name".into(), vec![common])),
-                    Column::from(Series::new("scientific name".into(), vec![scientific])),
-                    Column::from(Series::new("percent".into(), vec![percent])),
-                ],
-            )
-            .map_err(Into::into)
-        })
-        .collect();
+pub fn scrape_table(table: ElementRef, checklists: i32) -> Result<Vec<SpeciesRecord>> {
+    let mut records = Vec::new();
 
-    let mut df = concat_df_diagonal(&rows?)?;
-    df.with_column(Column::from(Series::new(
-        "checklists".into(),
-        vec![checklists; df.height()],
-    )))?;
-    Ok(df)
+    for row in table.select(selectors::target::rows()) {
+        let (common, scientific) = get_species(&row)?;
+        let percent = get_percent(&row);
+        records.push(SpeciesRecord {
+            common_name: common,
+            scientific_name: scientific,
+            percent,
+            checklists,
+        });
+    }
+
+    Ok(records)
 }

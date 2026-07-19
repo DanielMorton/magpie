@@ -1,5 +1,4 @@
 use crate::error::{AppError, Result};
-use polars::series::SeriesIter;
 
 #[derive(Debug, Clone)]
 pub struct LocationRow {
@@ -10,30 +9,17 @@ pub struct LocationRow {
 }
 
 impl LocationRow {
-    pub fn from_iters(iters: &mut [SeriesIter]) -> Result<Self> {
-        let values: Result<Vec<String>> = (0..iters.len())
-            .map(|i| {
-                iters[i]
-                    .next()
-                    .map(|v| v.to_string().trim_matches('"').to_owned())
-                    .ok_or_else(|| AppError::Parse("Missing column value".into()))
-            })
-            .collect();
+    pub fn from_csv_record(record: &csv::StringRecord, has_hotspot: bool) -> Result<Self> {
+        let mut it = record.iter();
+        let country = it.next().ok_or(AppError::Parse("Missing country".into()))?.to_string();
+        let region = it.next().ok_or(AppError::Parse("Missing region".into()))?.to_string();
+        let sub_region = it.next().ok_or(AppError::Parse("Missing sub_region".into()))?.to_string();
 
-        let vals = values?;
-        match vals.len() {
-            3 => Ok(Self::new_location(
-                vals[0].clone(),
-                vals[1].clone(),
-                vals[2].clone(),
-            )),
-            4 => Ok(Self::new_hotspot(
-                vals[0].clone(),
-                vals[1].clone(),
-                vals[2].clone(),
-                vals[3].clone(),
-            )),
-            n => Err(AppError::InvalidElementCount(n)),
+        if has_hotspot {
+            let hotspot = it.next().ok_or(AppError::Parse("Missing hotspot".into()))?.to_string();
+            Ok(Self::new_hotspot(country, region, sub_region, hotspot))
+        } else {
+            Ok(Self::new_location(country, region, sub_region))
         }
     }
 

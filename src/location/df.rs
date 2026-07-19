@@ -1,91 +1,48 @@
 use crate::error::Result;
 use crate::location::loc::{Hotspot, SubRegion};
-use polars::prelude::{Column, DataFrame, NamedFrom, Series};
 
-pub fn sub_regions_to_df(sub_regions: &[SubRegion]) -> Result<DataFrame> {
-    let len = sub_regions.len();
-    DataFrame::new(
-        len,
-        vec![
-            Column::from(Series::new(
-                "country".into(),
-                sub_regions.iter().map(|r| r.country()).collect::<Vec<_>>(),
-            )),
-            Column::from(Series::new(
-                "country_code".into(),
-                sub_regions
-                    .iter()
-                    .map(|r| r.country_code())
-                    .collect::<Vec<_>>(),
-            )),
-            Column::from(Series::new(
-                "region".into(),
-                sub_regions.iter().map(|r| r.region()).collect::<Vec<_>>(),
-            )),
-            Column::from(Series::new(
-                "region_code".into(),
-                sub_regions
-                    .iter()
-                    .map(|r| r.region_code())
-                    .collect::<Vec<_>>(),
-            )),
-            Column::from(Series::new(
-                "sub_region".into(),
-                sub_regions.iter().map(|s| s.name()).collect::<Vec<_>>(),
-            )),
-            Column::from(Series::new(
-                "sub_region_code".into(),
-                sub_regions.iter().map(|s| s.code()).collect::<Vec<_>>(),
-            )),
-        ],
-    )
-    .map_err(Into::into)
+pub fn write_sub_regions_csv(sub_regions: &[SubRegion], filename: &str) -> Result<()> {
+    let mut writer = csv::Writer::from_path(filename)?;
+    writer.write_record(&[
+        "country", "country_code", "region", "region_code",
+        "sub_region", "sub_region_code",
+    ])?;
+
+    for sr in sub_regions {
+        writer.write_record(&[
+            sr.country(),
+            sr.country_code(),
+            sr.region(),
+            sr.region_code(),
+            sr.name(),
+            sr.code(),
+        ])?;
+    }
+
+    writer.flush()?;
+    Ok(())
 }
 
-pub fn hotspots_to_df(hotspots: &[Hotspot]) -> Result<DataFrame> {
-    let len = hotspots.len();
-    DataFrame::new(
-        len,
-        vec![
-            Column::from(Series::new(
-                "country".into(),
-                hotspots.iter().map(|h| h.country()).collect::<Vec<_>>(),
-            )),
-            Column::from(Series::new(
-                "country_code".into(),
-                hotspots
-                    .iter()
-                    .map(|h| h.country_code())
-                    .collect::<Vec<_>>(),
-            )),
-            Column::from(Series::new(
-                "region".into(),
-                hotspots.iter().map(|h| h.region()).collect::<Vec<_>>(),
-            )),
-            Column::from(Series::new(
-                "region_code".into(),
-                hotspots.iter().map(|h| h.region_code()).collect::<Vec<_>>(),
-            )),
-            Column::from(Series::new(
-                "sub_region".into(),
-                hotspots.iter().map(|h| h.sub_region()).collect::<Vec<_>>(),
-            )),
-            Column::from(Series::new(
-                "sub_region_code".into(),
-                hotspots
-                    .iter()
-                    .map(|h| h.sub_region_code())
-                    .collect::<Vec<_>>(),
-            )),
-            Column::from(Series::new(
-                "hotspot".into(),
-                hotspots.iter().map(|h| h.name()).collect::<Vec<_>>(),
-            )),
-            Column::from(Series::new(
-                "hotspot_code".into(),
-                hotspots.iter().map(|h| h.code()).collect::<Vec<_>>(),
-            )),
-        ],
-    )
-    .map_err(Into::into)
+pub fn write_hotspots_csv(hotspots: &[Hotspot], filename: &str) -> Result<()> {
+    let mut writer = csv::Writer::from_path(filename)?;
+    writer.write_record(&[
+        "country", "country_code", "region", "region_code",
+        "sub_region", "sub_region_code", "hotspot", "hotspot_code",
+    ])?;
+
+    for h in hotspots {
+        writer.write_record(&[
+            h.country(),
+            h.country_code(),
+            h.region(),
+            h.region_code(),
+            h.sub_region(),
+            h.sub_region_code(),
+            h.name(),
+            h.code(),
+        ])?;
+    }
+
+    writer.flush()?;
+    Ok(())
 }

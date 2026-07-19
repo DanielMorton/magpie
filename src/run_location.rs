@@ -1,7 +1,7 @@
 use crate::error::Result;
-use crate::location::df::{hotspots_to_df, sub_regions_to_df};
+use crate::location::df::{write_hotspots_csv, write_sub_regions_csv};
 use crate::location::regions::{get_countries, get_hotspots, get_regions, get_sub_regions};
-use crate::utils::{print_elapsed, write_csv};
+use crate::utils::print_elapsed;
 use indicatif::{MultiProgress, ParallelProgressIterator, ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use reqwest::blocking::Client;
@@ -15,8 +15,8 @@ pub fn run() -> Result<()> {
     let style = ProgressStyle::with_template(
         "{spinner:.green} [{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}",
     )
-    .unwrap()
-    .progress_chars("##-");
+        .unwrap()
+        .progress_chars("##-");
 
     info!("Fetching countries...");
     let countries = get_countries(&client)?;
@@ -46,8 +46,7 @@ pub fn run() -> Result<()> {
     pb.finish_with_message("Sub-regions done");
     info!("Found {} sub-regions", sub_regions.len());
 
-    let mut sub_region_df = sub_regions_to_df(&sub_regions)?;
-    write_csv(&mut sub_region_df, "regions.csv")?;
+    write_sub_regions_csv(&sub_regions, "regions.csv")?;
     print_elapsed(&start, "Sub-regions scraped");
 
     let hotspot_start = Instant::now();
@@ -63,8 +62,7 @@ pub fn run() -> Result<()> {
     pb.finish_with_message("Hotspots done");
     info!("Found {} hotspots", hotspots.len());
 
-    let mut hotspot_df = hotspots_to_df(&hotspots)?;
-    write_csv(&mut hotspot_df, "hotspots.csv")?;
+    write_hotspots_csv(&hotspots, "hotspots.csv")?;
     print_elapsed(&hotspot_start, "Hotspots scraped");
     print_elapsed(&start, "Total time");
 
