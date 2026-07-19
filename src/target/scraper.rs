@@ -156,7 +156,6 @@ impl Scraper {
         let date_query = vec![("t2", self.date_range.to_string())];
 
         let response = self.fetch_with_backoff(loc, time, &date_query, MIN_BACKOFF_SECS)?;
-        let url = response.url().to_string();
         let text = response.text()?;
         let doc = Html::parse_document(&text);
 
