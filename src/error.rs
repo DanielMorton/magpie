@@ -39,6 +39,9 @@ pub enum AppError {
 
     #[error("No location data provided")]
     MissingLocation,
+
+    #[error("{0} scrapes failed. See failures.csv for details")]
+    ScrapingFailures(usize),
 }
 
 impl From<ParseIntError> for AppError {

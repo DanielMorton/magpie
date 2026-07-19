@@ -12,15 +12,26 @@ use rayon::prelude::*;
 use reqwest::blocking::Client;
 use scraper::Html;
 use std::cmp::min;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
-use tracing::warn;
+use tracing::{error, info, warn};
 
 const BASE_URL: &str = "https://ebird.org/targets";
 const HOME_URL: &str = "https://ebird.org/home";
 const LOGIN_URL: &str = "https://secure.birds.cornell.edu/cassso/login";
 const MAX_BACKOFF_SECS: u64 = 100;
 const MIN_BACKOFF_SECS: u64 = 5;
+const MAX_RETRIES: usize = 10;
+
+#[derive(Debug, Clone)]
+struct ScrapeFailure {
+    loc_code: String,
+    url: String,
+    reason: String,
+    time: (u8, u8),
+}
 
 pub struct Scraper {
     client: Client,
@@ -122,16 +133,15 @@ impl Scraper {
         }
     }
 
-    fn scrape_single(
+    fn scrape_single_attempt(
         &self,
-        _row: LocationRow,
-        loc: Vec<(String, String)>,
-        time: Vec<(String, u8)>,
-    ) -> Result<DataFrame> {
+        loc: &[(String, String)],
+        time: &[(String, u8)],
+    ) -> Result<(DataFrame, bool)> {
         let loc_code = loc[0].1.clone();
         let date_query = vec![("t2", self.date_range.to_string())];
 
-        let response = self.fetch_with_backoff(&loc, &time, &date_query, MIN_BACKOFF_SECS)?;
+        let response = self.fetch_with_backoff(loc, time, &date_query, MIN_BACKOFF_SECS)?;
         let url = response.url().to_string();
         let text = response.text()?;
         let doc = Html::parse_document(&text);
@@ -148,8 +158,7 @@ impl Scraper {
             .unwrap_or(false);
 
         if !valid {
-            warn!("Page validation failed for {}: {}", loc_code, url);
-            return empty_table();
+            return Ok((empty_table()?, false));
         }
 
         let checklists = doc.select(selectors::target::checklists())
@@ -164,13 +173,61 @@ impl Scraper {
             .and_then(|c| c.parse::<u32>().ok());
 
         match species_count {
-            Some(0) | None => empty_table(),
+            Some(0) | None => Ok((empty_table()?, true)),
             Some(_) => {
-                doc.select(selectors::target::native())
+                let df = doc.select(selectors::target::native())
                     .next()
-                    .map_or_else(empty_table, |t| crate::target::scrape_table::scrape_table(t, checklists))
+                    .map_or_else(empty_table, |t| crate::target::scrape_table::scrape_table(t, checklists))?;
+                Ok((df, true))
             }
         }
+    }
+
+    fn scrape_single(
+        &self,
+        loc: Vec<(String, String)>,
+        time: Vec<(String, u8)>,
+    ) -> Result<(DataFrame, Option<ScrapeFailure>)> {
+        let loc_code = loc[0].1.clone();
+        let time_tuple = (time[0].1, time[1].1);
+        let mut last_err = None;
+
+        for attempt in 0..MAX_RETRIES {
+            if attempt > 0 {
+                let backoff = min(2u64.pow(attempt as u32), 30);
+                thread::sleep(Duration::from_secs(backoff));
+                info!("Retrying {} (attempt {}/{})", loc_code, attempt + 1, MAX_RETRIES);
+            }
+
+            match self.scrape_single_attempt(&loc, &time) {
+                Ok((df, true)) => return Ok((df, None)),
+                Ok((_, false)) => {
+                    last_err = Some("Page validation failed".to_string());
+                }
+                Err(e) => {
+                    last_err = Some(e.to_string());
+                }
+            }
+        }
+
+        let failure = ScrapeFailure {
+            loc_code: loc_code.clone(),
+            url: format!("{}?{}", BASE_URL, self.build_query_string(&loc, &time)),
+            reason: last_err.unwrap_or_else(|| "Unknown error".to_string()),
+            time: time_tuple,
+        };
+
+        warn!("Failed after {} retries for {}: {}", MAX_RETRIES, loc_code, failure.reason);
+        Ok((empty_table()?, Some(failure)))
+    }
+
+    fn build_query_string(&self, loc: &[(String, String)], time: &[(String, u8)]) -> String {
+        let mut parts: Vec<String> = loc.iter()
+            .map(|(k, v)| format!("{}={}", k, v))
+            .collect();
+        parts.push(format!("bmo={}&emo={}", time[0].1, time[1].1));
+        parts.push(format!("t2={}", self.date_range));
+        parts.join("&")
     }
 
     pub fn scrape_all(&self) -> Result<DataFrame> {
@@ -195,21 +252,30 @@ impl Scraper {
         );
         pb.set_message("Scraping");
 
+        let failures = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let failure_count = Arc::new(AtomicUsize::new(0));
+
         let all_dfs: Vec<_> = items
             .into_par_iter()
             .progress_with(pb.clone())
             .filter_map(|((row, loc), time)| {
-                match self.scrape_single(row.clone(), loc, time.clone()) {
-                    Ok(mut df) => {
+                match self.scrape_single(loc, time.clone()) {
+                    Ok((mut df, None)) => {
                         if add_columns(&mut df, &row, &time).is_ok() {
                             Some(df)
                         } else {
-                            warn!("Failed to add columns for {}", row.country);
+                            error!("Failed to add columns for {}", row.country);
                             None
                         }
                     }
+                    Ok((_, Some(failure))) => {
+                        let mut f = failures.lock().unwrap();
+                        f.push(failure);
+                        failure_count.fetch_add(1, Ordering::Relaxed);
+                        None
+                    }
                     Err(e) => {
-                        warn!("Scrape failed for {}: {}", row.country, e);
+                        error!("Scrape failed for {}: {}", row.country, e);
                         None
                     }
                 }
@@ -219,10 +285,41 @@ impl Scraper {
         pb.finish_with_message("Done");
         print_elapsed(&start, "Scraping complete");
 
+        let failures = Arc::try_unwrap(failures).unwrap().into_inner().unwrap();
+        let failure_count = failure_count.load(Ordering::Relaxed);
+
+        if !failures.is_empty() {
+            self.write_failures(&failures)?;
+            warn!("{} scrapes failed. See failures.csv for details.", failure_count);
+        }
+
         if all_dfs.is_empty() {
+            if failure_count > 0 {
+                return Err(AppError::ScrapingFailures(failure_count));
+            }
             empty_table()
         } else {
-            concat_df_diagonal(&all_dfs).map_err(Into::into)
+            let df = concat_df_diagonal(&all_dfs).map_err(AppError::from)?;if failure_count > 0 {
+                info!("Partial success: {} items scraped, {} failed", all_dfs.len(), failure_count);
+            }
+            Ok(df)
         }
+    }
+
+    fn write_failures(&self, failures: &[ScrapeFailure]) -> Result<()> {
+        use std::io::Write;
+
+        let mut file = std::fs::File::create("failures.csv")?;
+        writeln!(file, "loc_code,url,reason,start_month,end_month")?;
+        for f in failures {
+            writeln!(file, "{},{},{},{},{}",
+                     f.loc_code,
+                     f.url.replace(',', "%2C"),
+                     f.reason.replace(',', ";"),
+                     f.time.0,
+                     f.time.1
+            )?;
+        }
+        Ok(())
     }
 }
