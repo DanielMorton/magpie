@@ -61,11 +61,16 @@ impl Scraper {
     }
 
     fn make_loc_payloads(&self) -> Result<Vec<Vec<(String, String)>>> {
-        let level_code = self.location_level.to_string();
-        let cols = if self.list_type == ListType::Global {
+        let level_code = match self.location_level {
+            LocationLevel::Hotspot => "hotspot_code",
+            LocationLevel::SubRegion => "sub_region_code",
+        };
+
+        let second_col = format!("{}_code", self.list_type);
+        let cols: Vec<&str> = if self.list_type == ListType::Global {
             vec![level_code]
         } else {
-            vec![level_code, self.list_type.to_string()]
+            vec![level_code, &second_col]
         };
 
         let selected = self.loc_df.select(cols)?;
