@@ -30,7 +30,7 @@ fn parse_row(row: &ElementRef) -> Result<(String, String)> {
         .attr("href")
         .ok_or("No url for row")?
         .split('/')
-        .last()
+        .next_back()
         .ok_or("Improperly formatted url for row")?;
     Ok((name.to_owned(), code.to_owned()))
 }

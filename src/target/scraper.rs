@@ -10,6 +10,7 @@ use rayon::prelude::*;
 use reqwest::blocking::Client;
 use scraper::Html;
 use std::cmp::min;
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::thread;
@@ -72,7 +73,6 @@ pub struct Scraper {
     client: Client,
     date_range: DateRange,
     location_level: LocationLevel,
-    list_type: ListType,
     locations: Vec<LocationData>,
     time_ranges: Vec<(u8, u8)>,
 }
@@ -91,7 +91,6 @@ impl Scraper {
             client,
             date_range,
             location_level,
-            list_type,
             locations,
             time_ranges,
         })
@@ -105,7 +104,33 @@ impl Scraper {
         let mut reader = csv::Reader::from_path(path)?;
         let headers: Vec<String> = reader.headers()?.iter().map(|s| s.to_string()).collect();
 
+        let header_map: HashMap<String, usize> = headers
+            .iter()
+            .enumerate()
+            .map(|(i, h)| (h.clone(), i))
+            .collect();
+
         let has_hotspot = level == LocationLevel::Hotspot;
+
+        let country_idx = *header_map
+            .get("country")
+            .ok_or_else(|| AppError::Parse("Missing 'country' column".into()))?;
+        let region_idx = *header_map
+            .get("region")
+            .ok_or_else(|| AppError::Parse("Missing 'region' column".into()))?;
+        let sub_region_idx = *header_map
+            .get("sub_region")
+            .ok_or_else(|| AppError::Parse("Missing 'sub_region' column".into()))?;
+        let hotspot_idx = if has_hotspot {
+            Some(
+                *header_map
+                    .get("hotspot")
+                    .ok_or_else(|| AppError::Parse("Missing 'hotspot' column".into()))?,
+            )
+        } else {
+            None
+        };
+
         let level_code_col = match level {
             LocationLevel::Hotspot => "hotspot_code",
             LocationLevel::SubRegion => "sub_region_code",
@@ -120,16 +145,39 @@ impl Scraper {
 
         let mut col_indices = Vec::new();
         for col in &need_cols {
-            let idx = headers.iter().position(|h| h == *col).ok_or_else(|| {
-                AppError::Parse(format!("Column '{}' not found in CSV", col))
-            })?;
+            let idx = header_map
+                .get(*col)
+                .copied()
+                .ok_or_else(|| AppError::Parse(format!("Column '{}' not found in CSV", col)))?;
             col_indices.push(idx);
         }
 
         let mut locations = Vec::new();
         for result in reader.records() {
             let record = result?;
-            let row = LocationRow::from_csv_record(&record, has_hotspot)?;
+
+            let country = record
+                .get(country_idx)
+                .ok_or_else(|| AppError::Parse("Missing country value".into()))?
+                .to_string();
+            let region = record
+                .get(region_idx)
+                .ok_or_else(|| AppError::Parse("Missing region value".into()))?
+                .to_string();
+            let sub_region = record
+                .get(sub_region_idx)
+                .ok_or_else(|| AppError::Parse("Missing sub_region value".into()))?
+                .to_string();
+
+            let row = if let Some(hi) = hotspot_idx {
+                let hotspot = record
+                    .get(hi)
+                    .ok_or_else(|| AppError::Parse("Missing hotspot value".into()))?
+                    .to_string();
+                LocationRow::new_hotspot(country, region, sub_region, hotspot)
+            } else {
+                LocationRow::new_location(country, region, sub_region)
+            };
 
             let mut codes = Vec::new();
             for (i, &col_idx) in col_indices.iter().enumerate() {
@@ -172,12 +220,7 @@ impl Scraper {
                 return Err(AppError::MaxRetries(url));
             }
             thread::sleep(Duration::from_secs(sleep_secs));
-            self.fetch_with_backoff(
-                loc,
-                time,
-                date_query,
-                min(sleep_secs * 2, MAX_BACKOFF_SECS),
-            )
+            self.fetch_with_backoff(loc, time, date_query, min(sleep_secs * 2, MAX_BACKOFF_SECS))
         } else {
             Ok(response)
         }
@@ -233,12 +276,10 @@ impl Scraper {
         match species_count {
             Some(0) | None => Ok((Vec::new(), true)),
             Some(_) => {
-                let records = doc
-                    .select(selectors::target::native())
-                    .next()
-                    .map_or_else(|| Ok(Vec::new()), |t| {
-                        crate::target::scrape_table::scrape_table(t, checklists)
-                    })?;
+                let records = doc.select(selectors::target::native()).next().map_or_else(
+                    || Ok(Vec::new()),
+                    |t| crate::target::scrape_table::scrape_table(t, checklists),
+                )?;
                 Ok((records, true))
             }
         }
@@ -284,7 +325,11 @@ impl Scraper {
 
         let failure = ScrapeFailure {
             loc_code: loc_code.clone(),
-            url: format!("{}?{}", BASE_URL, self.build_query_string(&loc_data.codes, &time)),
+            url: format!(
+                "{}?{}",
+                BASE_URL,
+                self.build_query_string(&loc_data.codes, &time)
+            ),
             reason: last_err.unwrap_or_else(|| "Unknown error".to_string()),
             time: time_tuple,
         };
@@ -297,8 +342,7 @@ impl Scraper {
     }
 
     fn build_query_string(&self, loc: &[(String, String)], time: &[(String, u8)]) -> String {
-        let mut parts: Vec<String> =
-            loc.iter().map(|(k, v)| format!("{}={}", k, v)).collect();
+        let mut parts: Vec<String> = loc.iter().map(|(k, v)| format!("{}={}", k, v)).collect();
         parts.push(format!("bmo={}&emo={}", time[0].1, time[1].1));
         parts.push(format!("t2={}", self.date_range));
         parts.join("&")
@@ -334,8 +378,8 @@ impl Scraper {
         let all_records: Vec<Vec<EnrichedRecord>> = items
             .into_par_iter()
             .progress_with(pb.clone())
-            .filter_map(|(loc_data, time)| {
-                match self.scrape_single(loc_data, time) {
+            .filter_map(
+                |(loc_data, time)| match self.scrape_single(loc_data, time) {
                     Ok((records, None)) => Some(records),
                     Ok((_, Some(failure))) => {
                         let mut f = failures.lock().unwrap();
@@ -347,8 +391,8 @@ impl Scraper {
                         error!("Scrape failed for {}: {}", loc_data.row.country, e);
                         None
                     }
-                }
-            })
+                },
+            )
             .collect();
 
         pb.finish_with_message("Done");
@@ -365,8 +409,9 @@ impl Scraper {
             );
         }
 
-        let mut writer = csv::Writer::from_path(output_file)?;
-        writer.write_record(&[
+        let has_hotspot = self.location_level == LocationLevel::Hotspot;
+
+        let mut headers = vec![
             "common name",
             "scientific name",
             "percent",
@@ -374,26 +419,34 @@ impl Scraper {
             "sub_region",
             "region",
             "country",
-            "hotspot",
             "start month",
             "end month",
-        ])?;
+        ];
+        if has_hotspot {
+            headers.insert(7, "hotspot");
+        }
+
+        let mut writer = csv::Writer::from_path(output_file)?;
+        writer.write_record(&headers)?;
 
         let mut total_records = 0usize;
         for batch in all_records {
             for record in batch {
-                writer.write_record(&[
-                    &record.common_name,
-                    &record.scientific_name,
-                    &record.percent.to_string(),
-                    &record.checklists.to_string(),
-                    &record.sub_region,
-                    &record.region,
-                    &record.country,
-                    record.hotspot.as_deref().unwrap_or(""),
-                    &record.start_month.to_string(),
-                    &record.end_month.to_string(),
-                ])?;
+                let mut row = vec![
+                    record.common_name.clone(),
+                    record.scientific_name.clone(),
+                    record.percent.to_string(),
+                    record.checklists.to_string(),
+                    record.sub_region.clone(),
+                    record.region.clone(),
+                    record.country.clone(),
+                ];
+                if has_hotspot {
+                    row.push(record.hotspot.as_deref().unwrap_or("").to_string());
+                }
+                row.push(record.start_month.to_string());
+                row.push(record.end_month.to_string());
+                writer.write_record(&row)?;
                 total_records += 1;
             }
         }

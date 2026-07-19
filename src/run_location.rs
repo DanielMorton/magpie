@@ -15,8 +15,8 @@ pub fn run() -> Result<()> {
     let style = ProgressStyle::with_template(
         "{spinner:.green} [{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}",
     )
-        .unwrap()
-        .progress_chars("##-");
+    .unwrap()
+    .progress_chars("##-");
 
     info!("Fetching countries...");
     let countries = get_countries(&client)?;
