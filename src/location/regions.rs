@@ -1,4 +1,4 @@
-use crate::error::{AppError, Result};
+use crate::error::Result;
 use crate::location::loc::{Country, Hotspot, Region, SubRegion};
 use crate::selectors;
 use reqwest::blocking::Client;

@@ -1,12 +1,12 @@
-use lazy_static::lazy_static;
 use scraper::Selector;
+use std::sync::LazyLock;
 
 macro_rules! define_selector {
     ($fn_name:ident, $static_name:ident, $selector:expr) => {
-        lazy_static! {
-            static ref $static_name: Selector = Selector::parse($selector)
-                .unwrap_or_else(|_| panic!("Failed to parse selector: {}", $selector));
-        }
+        static $static_name: LazyLock<Selector> = LazyLock::new(|| {
+            Selector::parse($selector)
+                .unwrap_or_else(|_| panic!("Failed to parse selector: {}", $selector))
+        });
         pub fn $fn_name() -> &'static Selector {
             &$static_name
         }

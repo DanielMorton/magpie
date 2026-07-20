@@ -5,7 +5,6 @@ use crate::target::scrape_params::{DateRange, ListType, LocationLevel};
 use crate::target::scrape_table::SpeciesRecord;
 use crate::utils::print_elapsed;
 use indicatif::{MultiProgress, ParallelProgressIterator, ProgressBar, ProgressStyle};
-use itertools::Itertools;
 use rayon::prelude::*;
 use reqwest::blocking::Client;
 use scraper::Html;
@@ -351,15 +350,15 @@ impl Scraper {
     pub fn scrape_all(&self, output_file: &str) -> Result<()> {
         let start = Instant::now();
 
+        // Replaced itertools::Itertools::cartesian_product with nested flat_map
         let items: Vec<_> = self
             .locations
             .iter()
-            .cartesian_product(
+            .flat_map(|loc| {
                 self.time_ranges
-                    .clone()
-                    .into_iter()
-                    .map(|(s, e)| vec![("bmo".into(), s), ("emo".into(), e)]),
-            )
+                    .iter()
+                    .map(move |&(s, e)| (loc, vec![("bmo".into(), s), ("emo".into(), e)]))
+            })
             .collect();
 
         let total = items.len();
